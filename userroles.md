@@ -1,24 +1,12 @@
 ## User roles
 In this part of the project analysis, different user roles and their permissions are being described.
 ### 👤 User
-Standard user role, accessing the service through a conventional (modern) web browser.
+Standard user role, accessing the service through a conventional (modern) web browser. Certain level of web development knowledge is expected (basics of HTML and CSS). Knowledge of Playwright is not required, although useful when defining custom actions.
 
-#### Permissions
-- can interact with the streamed Playwright environment
-- inside the Playwright environment, user can record their actions and save these recordings, as well as rename and remove them
-- can edit the generated code (in both text and "block coding" manner)
-- can replay the generated code
-- can debug the generated code in a step-by-step manner
-
-#### Limitations
-- the system shall employ a time limit for user-made code snippets to avoid excessive hardware usage or other malicious intents
-- the system shall limit the code size per user-made snippet (and number of saved snippets) to avoid excessive disk usage
-- in case of recurrent limit violations, the system shall restrict the user and notify the administrator
-
-### 👩‍💻 Administrator
-An elevated user role with a broader spectrum of permissions.
-
-#### Permissions
-- all the basic [user permissions](#permissions)
-- recieves notifications about the limit-exceeding code snippets, can manually verify user-made code and explicitly allow its execution
-- reviews suspicious user activity reports, can manually ban users based on these 
+#### Solution requirements
+- the solution shall enable user to record their action in the streamed Playwright environment
+- the solution shall export the recorded actions as a Playwright script after recording (when requested) 
+- during the recording, the solution shall allow user to edit the code manually to add custom Playwright actions
+- the solution shall be able to replay an existing recording, preferably in a step-by-step (block-coding) manner
+- during the playback phase, the solution shall allow user to stop the playback, edit its parts and save this edited recording (or save this as a new file)
+- the solution shall be entirely accessible through a conventional modern web browser (Chrome 87+, Firefox 84+) with no need to install any additional software on the client-side.
