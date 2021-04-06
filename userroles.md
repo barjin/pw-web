@@ -6,7 +6,7 @@ Certain level of web development knowledge is expected (basics of HTML and CSS).
 
 #### Solution requirements
 The following points sum up the client's requirements for the solution in a priority-ordered manner.
-##### ⚠ Crucial
+##### 🔥 Crucial
 - the solution shall enable user to record their action in the streamed Playwright environment
 - the solution shall export the recorded actions as a Playwright script after recording (when requested) 
 - during the recording, the solution shall allow user to edit the code manually to add custom Playwright actions
