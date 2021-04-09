@@ -16,6 +16,8 @@ The following points sum up the client's requirements for the solution in a prio
 - during the recording, the solution shall allow user to edit the code manually to add custom *Playwright* actions
 - the solution shall be able to replay an existing recording
 - the solution shall be entirely accessible through a conventional modern web browser *(Chrome 87+, Firefox 84+ and similar)* with no need to install any additional software on the client-side.
+- the solution shall be a single-user application, no authentication / user managmement is required.
+- the solution shall be easily deployable, preferably as a Docker image or similar.
 
 ##### ❗ Important
 - during the recording phase, the solution shall record the actions in a "block-coding" manner ("click", "open URL" etc.) to allow for simple and user-friendly code manipulation.
