@@ -1,7 +1,14 @@
 ## Use case analysis
 In this part of the project analysis, I describe possible use cases and workflows.
 
-### Creating a new recording
+### UML Use Case Diagram
+In the following diagram, the relations between actors and their use cases are depicted.
+![UML Use Case Diagram](./umldiagram.png)
+
+### Use case descriptions
+In the following section, I introduce all the possible use cases in a more detailed manner and describe the required steps to achieve those. 
+
+#### Creating a new recording
 When recording a new code snippet, the user interacts with the streamed *Playwright* environment, which results in generating the code snippet.
 - After startup, the user is in the **Main Menu**, where they can see their existing recordings. By clicking the *New Recording* button, the user enters the **Snippet Detail Screen**.
 - The **Snippet Detail Screen** is vertically divided into two parts: *Code* and *Playwright Environment*. The *Code* part is where the generated code will appear, in the *Playwright Environment* section, there is a styled text input field.
@@ -10,7 +17,7 @@ When recording a new code snippet, the user interacts with the streamed *Playwri
 - The generated code appears in the *Code* section of the screen, preferably in the "block coding" manner.
 - By clicking the *Stop recording* button in the uppermost part of the *Code* section, the server stops streaming the Playwright environment and allows user to edit, debug or save the generated code.
 
-### Playing an recording
+#### Playing an recording
 After recording a code snippet, the user can replay the recording to review it.
 - The user can either pick the recording from the **Main Menu** screen or stay on the **Snippet Detail Screen** after recording a new snippet. 
 - On the **Snippet Detail Screen** in the uppermost part of the *Code* section, there is a *Control bar* with *Play*, *Pause*, *Step* and *Settings* buttons. 
@@ -19,18 +26,14 @@ After recording a code snippet, the user can replay the recording to review it.
 - During the playback phase, user can click the *Pause* button, which halts the current playback.
 - By clicking the *Step* button, the user sends a signal to execute the current pending command. If the Playwright session is inactive, a new Playwright session is spawned and the command is executed.
 
-### Editing a recording
+#### Editing a recording
 After recording a code snippet, the user can edit its parts to achieve the expected behaviour.
 - On the **Snippet Detail Screen**, clicking any of the generated code blocks (in the *Code* section) opens a modal pop-up window with a textarea field containing the generated code, which the user can edit. 
 - Furthermore, at the bottom of the *Code* section, there is a *New Block* button. Clicking this button also opens a modal pop-up window with empty textarea field, where the user can enter their own custom code.
 - User can rearrange the code blocks by left-click-dragging them. 
 - By clicking the "X" button in the top-right corner of the code block, the user removes this block from the *Code* section.
 
-### Managing the recordings
+#### Managing the recordings
 The user can also manage (rename, delete) the existing recordings.
 - In the **Main Menu** screen while selecting the recording, there is a "hamburger menu" icon in the top-right corner of each recording's button. Clicking this icon opens a dropdown menu with options to *Rename* and *Delete* the affected recording.
 - When selecting *Delete* from the dropdown menu, the service asks the user to confirm their decision by opening a modal alert "Are you sure?" window.
-
-## UML Use Case Diagram
-In the following diagram, the relations between actors and their use cases are depicted.
-![UML Use Case Diagram](./umldiagram.png)
