@@ -1,5 +1,5 @@
-## User roles
-In this part of the project analysis, different user roles and their permissions are being described.
+## User roles and requirements
+In this part of the project analysis, different user roles, their permissions and requirements are being described.
 ### 👤 User
 Standard user role, accessing the service through a conventional (modern) web browser. \
 Certain level of web development knowledge is expected (basics of HTML and CSS). Knowledge of *Playwright* is not required, although useful when defining custom actions.
