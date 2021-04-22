@@ -31,5 +31,5 @@ After recording a code snippet, the user can edit its parts to achieve the expec
 - User can delete existing code.
 
 #### Managing the recordings
-The user can also manage (rename, delete) the existing recordings.
-- User selects a recording and either deletes it, or renames it.
+The user can also manage the existing recordings.
+- User can select a recording and either delete it, or rename it.
