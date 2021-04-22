@@ -1,5 +1,6 @@
 ## Design
-In this part, I elaborate on the UI design of the application. The front-end application should be written using *[React.js](https://reactjs.org/)* as it allows for quick development and scalability.
+In this part, I elaborate on the UI design of the application. The front-end application should be written using *[React.js](https://reactjs.org/)* as it allows for quick development and scalability. The backend server part of the application has no GUI (runs in CLI mode only).
+
 ### Main Menu
 | ![Main Menu Mockup (courtesy of Apify)](./img/menu_design.png) | 
 |:--:| 
