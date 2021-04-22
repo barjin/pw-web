@@ -3,3 +3,4 @@
 ### Analysis
 - [User Roles and Requirements](./userroles.md)
 - [Use Cases](./usecases/usecases.md)
+- [Design](./design.md)
