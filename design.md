@@ -1,6 +1,12 @@
 ## Design
-In this part, I elaborate on the UI design of the application. The front-end application should be written using *[React.js](https://reactjs.org/)* as it allows for quick development and scalability. The backend server part of the application has no GUI (runs in CLI mode only).
+In this part, I elaborate on the design of the application. 
 
+## Backend
+The backend server part of the application has no GUI (runs in CLI mode only). It should be implemented in *[Node.js](https://nodejs.org/)*, which is particularly useful in this case for its native integration of *Playwright*.\
+Server should offer both HTTP/S (to serve the webpage with UI) and WebSockets/WebRTC connection (to communicate with the client -and stream the Playwright environment- during the recording session.)
+
+## Frontend
+The front-end application should be written using *[React.js](https://reactjs.org/)* as it allows for quick development and scalability.
 ### Main Menu
 | ![Main Menu Mockup (courtesy of Apify)](./img/menu_design.png) | 
 |:--:| 
