@@ -1,11 +1,11 @@
 ## Design
 In this part, I elaborate on the UI design of the application.
 ### Main Menu
-![Main Menu Mockup (courtesy of Apify)](.img/menu_design.png)
+![Main Menu Mockup (courtesy of Apify)](./img/menu_design.png)
 After startup, the user is in the *Main Menu*, where they can see a list of their existing recordings. By clicking any of the recordings, the user is taken to the *Snippet Detail Screen*. By clicking the *New Recording* button, the user is taken to the *Snippet Detail Screen* as well (a blank one).
 
 ### Snippet Detail Screen
-![Snippet Detail Screen (courtesy of Apify, modified)](.img/recording_design.png)
+![Snippet Detail Screen (courtesy of Apify, modified)](./img/recording_design.png)
 The **Snippet Detail Screen** is the main window of the entire application, as the recordings are being made and edited here.
 - This screen is vertically divided into two parts: *Code* and *Playwright Environment*. 
 - The *Code* part is where the generated code appears, in the uppermost part of the *Code* section, there is also a *Control bar* with *Play*, *Pause*, *Step* and *Settings* buttons. 
