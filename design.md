@@ -2,8 +2,10 @@
 In this part, I elaborate on the design of the application. 
 
 ## Backend
-- The backend server part of the application has no GUI (runs in CLI mode only). It should be implemented in *[Node.js](https://nodejs.org/)*, which is particularly useful in this case for its native integration of *Playwright*.
-- Server should offer connection over both HTTP (to serve the webpage with UI) and WebSockets/WebRTC (to communicate with the client -and stream the Playwright environment- during the recording session) 
+- The backend server part of the application has no <abbr title="Graphical User Interface">GUI</abbr> (runs in <abbr title="Command Line Interface">CLI</abbr> mode only). It should be implemented in [Node.js](https://nodejs.org/), which is particularly useful in this case for its native integration of *Playwright*.
+- Server should offer connection over both HTTP (to serve the webpage with UI) and [WebSockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) and [WebRTC](https://webrtc.org/) (to communicate with the client and stream the Playwright environment during the recording session). 
+    - For the realtime video streaming, some HTTP-based protocols (namely [DASH](https://dashif.org/) and [HLS](https://tools.ietf.org/html/rfc8216)) also went into consideration. *WebRTC* is still seen as a more suitable option as both HTTP-based protocols are still (as of April 2021) prone to latency problems.
+    - The client - server communication (sending commands during the recording session) could be also implemented using HTTP, for example using REST-like API. In this case, *WebSockets* seem as a better option, mostly for the smaller overhead and possibility of bidirectional communication.
 
 ## Frontend
 The front-end application should be written using *[React.js](https://reactjs.org/)* as it allows for quick development and scalability.
@@ -20,7 +22,7 @@ After startup, the user is in the *Main Menu*, where they can see a list of thei
 | *Snippet Detail Screen Mockup (courtesy of Apify, modified)* |
 
 The **Snippet Detail Screen** is the main window of the entire application, as the recordings are being made and edited here.
-- This screen is vertically divided into two parts: *Code* and *Playwright Environment*. 
+- This screen is vertically divided into two parts: *Code* and *Playwright Environment*. Even though there are no real technical limitations regarding the client screen size / orientation, using Pwww on portrait oriented devices (e.g. smartphones) is not expected due to nature of the application.
 - The *Code* part is where the generated code appears, in the uppermost part of the *Code* section, there is also a *Control Bar* with *Play*, *Pause*, *Step*, *Start Recording* and *Settings* buttons. 
     - Clicking the *Settings* button opens a context menu with *Delay* setting. By editing this value, the user sets the delay before running each "code block command". 
     - Double-clicking any of the code blocks opens a modal window with *Playwright* code editor, where the user can customize this specific section of the generated code.
@@ -28,6 +30,3 @@ The **Snippet Detail Screen** is the main window of the entire application, as t
 - In the *Playwright Environment* section, there is an HTML5 canvas element, receiving the Playwright video stream. 
     - By interacting with this canvas (clicking, typing with the canvas in focus), the front-end application sends these events to the Playwright session on server (preferably using *WebSockets* to ensure reliable, low overhead communication).
     - During the recording/playback session, server streams a screencast of the Playwright session to the client app (using binary transmission over *WebSockets*, *WebRTC* or *DASH/HLS*. For simplicity and sturdiness, the *DASH* solution is preferable, as it does not involve low-level manipulation with data and is well documented, however for low latency, which is crucial in this application, the *WebRTC* approach is much more suitable. 
-
-    *[GUI]:     Graphical user interface
-    *[CLI]:     Command line interface
