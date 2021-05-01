@@ -28,3 +28,6 @@ The **Snippet Detail Screen** is the main window of the entire application, as t
 - In the *Playwright Environment* section, there is an HTML5 canvas element, receiving the Playwright video stream. 
     - By interacting with this canvas (clicking, typing with the canvas in focus), the front-end application sends these events to the Playwright session on server (preferably using *WebSockets* to ensure reliable, low overhead communication).
     - During the recording/playback session, server streams a screencast of the Playwright session to the client app (using binary transmission over *WebSockets*, *WebRTC* or *DASH/HLS*. For simplicity and sturdiness, the *DASH* solution is preferable, as it does not involve low-level manipulation with data and is well documented, however for low latency, which is crucial in this application, the *WebRTC* approach is much more suitable. 
+
+    *[GUI]:     Graphical user interface
+    *[CLI]:     Command line interface
