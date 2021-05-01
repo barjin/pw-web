@@ -8,7 +8,10 @@ In this part, I elaborate on the design of the application.
     - The client - server communication (sending commands during the recording session) could be also implemented using HTTP, for example using REST-like API. In this case, *WebSockets* seem as a better option, mostly for the smaller overhead and possibility of bidirectional communication.
 
 ## Frontend
-The front-end application should be written using *[React.js](https://reactjs.org/)* as it allows for quick development and scalability.
+- The front-end application should be written using [React.js](https://reactjs.org/) for the UI logic and [Bootstrap](https://getbootstrap.com/) for UI elements and layout management.
+    - Other UI frameworks, such as [Angular](https://angular.io/) or [Vue.js](https://vuejs.org/) also went into consideration here. *React.js* is preferred for its combination of a relatively small memory footprint, fast execution times and detailed documentation.
+    - As for the component design libraries, several others were considered (namely [Material UI](https://material-ui.com/) and [Ant Design](https://ant.design/docs/react/introduce)). Bootstrap got selected mainly because of its recognizable and simple design and widespread browser support.
+     
 ### Main Menu
 | ![Main Menu Mockup (courtesy of Apify)](./img/menu_design.png) | 
 |:--:| 
