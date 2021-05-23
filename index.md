@@ -3,4 +3,6 @@
 ### Analysis
 - [User Roles and Requirements](./userroles.md)
 - [Use Cases](./usecases/usecases.md)
-- [Design](./design.md)
+- Design
+    - [UI Design](./design.md#ui-design)
+    - [Technical Design](./design.md#technical-design)
