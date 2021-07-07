@@ -1,0 +1,13 @@
+{
+    "name": "pwww-server",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "playwright": "^1.12.3",
+        "yargs": "^17.0.1"
+    },
+    "bin": "./pwwwServer.js",
+    "devDependencies": {
+        "electron": "^13.1.6"
+    }
+}
