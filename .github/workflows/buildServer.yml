@@ -23,11 +23,14 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
 
-      - name: Install tsc
+      - name: Setup compiler and environemnt
         run: |
           sudo apt-get -y install nodejs
           sudo npm install -g typescript
+          sudo npm install @types/node --save-dev
 
       - name: Compile .ts files to /backend/build/
         run: |
