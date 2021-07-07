@@ -31,6 +31,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/backend/
           tsc
+          cp package.json ./build/
 
       - name: Upload built .js as artifacts
         uses: actions/upload-artifact@v2
