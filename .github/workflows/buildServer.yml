@@ -27,12 +27,12 @@ jobs:
       - name: Install tsc
         run: |
           sudo apt-get -y install nodejs
-          npm install -g typescript
+          sudo npm install -g typescript
 
       - name: Compile .ts files to /backend/build/
         run: |
           cd $GITHUB_WORKSPACE/backend/
-          tsc
+          sudo tsc
           cp package.json ./build/
 
       - name: Upload built .js as artifacts
