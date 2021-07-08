@@ -1,5 +1,5 @@
 #!/bin/bash
-cd $GITHUB_WORKSPACE/backend
+cd ..
 sudo npm install .
 cd playwright
 sudo npm install --production=false .
