@@ -30,6 +30,9 @@ jobs:
         run: |
           sudo apt-get -y install nodejs
           sudo npm install -g typescript
+
+      - name: Install (dev-)dependencies for Playwright
+        run: |
           cd $GITHUB_WORKSPACE/backend/playwright
           sudo npm install -g --production=false .
 
