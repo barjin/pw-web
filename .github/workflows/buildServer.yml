@@ -54,5 +54,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: pwww-server
-          path: $GITHUB_WORKSPACE/backend/build
+          path: $GITHUB_WORKSPACE/backend/pwww-server.zip
 

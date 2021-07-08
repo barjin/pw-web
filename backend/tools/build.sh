@@ -8,6 +8,9 @@ sudo npm install --production=false .
 cd ..
 echo "Compiling pwww-server ts to js..."
 sudo tsc
-cp ./package.json ./build
-echo "pwww-server has been successfully built to ./backend/build!"
-ls ./build
+cp ./package.json ./build/src
+
+sudo apt install zip unzip
+
+sudo zip -r pwww-server.zip ./build/src/*
+echo "pwww-server has been successfully built!"
