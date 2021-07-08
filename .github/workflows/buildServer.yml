@@ -43,7 +43,9 @@ jobs:
           node-version: '14'
 
       - name: Install project and dependencies
-        run: sudo npm install $GITHUB_WORKSPACE/frontend
+        run : |
+          cd $GITHUB_WORKSPACE/frontend
+          sudo npm install .
       
       - name: Build React App
         run: |
