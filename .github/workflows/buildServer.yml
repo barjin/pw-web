@@ -1,26 +1,13 @@
-# This is a basic workflow to help you get started with Actions
+name: Build server and React App
 
-name: Build server (TSC)
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [ development ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  build-server:
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
@@ -37,22 +24,35 @@ jobs:
           sudo chmod +x ./build.sh
           sudo ./build.sh
 
-      # - name: Install (dev-)dependencies for Playwright and PWWW
-      #   run: |
-      #     cd $GITHUB_WORKSPACE/backend/playwright
-      #     sudo npm install --production=false .
-      #     cd ..
-      #     sudo npm install ws
-
-      # - name: Compile .ts files to /backend/build/
-      #   run: |
-      #     cd $GITHUB_WORKSPACE/backend/
-      #     sudo tsc
-      #     cp package.json ./build/
-
-      - name: Upload built .js as artifacts
+      - name: Upload built .js as a job artifact
         uses: actions/upload-artifact@v2
         with:
           name: pwww-server
           path: ${{github.workspace}}/backend/build/src/
+  
+  build-react:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Install node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install project and dependencies
+        run: sudo npm install $GITHUB_WORKSPACE/frontend
+      
+      - name: Build React App
+        run: |
+          cd $GITHUB_WORKSPACE/frontend
+          sudo npm run build
+      
+      - name: Upload built app as a job artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: pwww-client
+          path: ${{github.workspace}}/frontend/build/
 
