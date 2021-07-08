@@ -28,11 +28,13 @@ jobs:
 
       - name: Setup compiler and environemnt
         run: |
-          sudo apt-get -y install nodejs
+          curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          sudo apt-get install -y npm
 
       - name: Install dependencies and build project
-        working-directory: $GITHUB_WORKSPACE/backend/tools
         run : |
+          cd $GITHUB_WORKSPACE/backend/tools
           sudo chmod +x ./build.sh
           sudo ./build.sh
 
