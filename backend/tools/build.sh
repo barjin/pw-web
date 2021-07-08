@@ -14,3 +14,4 @@ sudo apt install zip unzip
 
 sudo zip -r pwww-server.zip ./build/src/*
 echo "pwww-server has been successfully built!"
+ls .
