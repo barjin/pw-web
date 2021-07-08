@@ -9,9 +9,5 @@ cd ..
 echo "Compiling pwww-server ts to js..."
 sudo tsc
 cp ./package.json ./build/src
-
-sudo apt install zip unzip
-
-sudo zip -r pwww-server.zip ./build/src/*
 echo "pwww-server has been successfully built!"
-ls .
+ls ./build/src
