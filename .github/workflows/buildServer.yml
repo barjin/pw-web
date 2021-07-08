@@ -30,7 +30,8 @@ jobs:
         run: |
           sudo apt-get -y install nodejs
           sudo npm install -g typescript
-          sudo npm install @types/node --save-dev
+          cd $GITHUB_WORKSPACE/backend/playwright
+          sudo npm install -g --production=false .
 
       - name: Compile .ts files to /backend/build/
         run: |

@@ -8,6 +8,7 @@
     },
     "bin": "./pwwwServer.js",
     "devDependencies": {
-        "electron": "^13.1.6"
+        "electron": "^13.1.6",
+        "ws": "^7.5.2"
     }
 }
