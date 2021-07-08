@@ -31,9 +31,12 @@ jobs:
           sudo apt-get -y install nodejs
           sudo npm install -g typescript
 
-      - name: Manually install (dev-)dependencies for Playwright and PWWW
+      - name: Install (dev-)dependencies for Playwright and PWWW
         run: |
-          sudo npm install -g ws electron mime debug stack-utils rimraf proxy-from-env
+          cd $GITHUB_WORKSPACE/backend/playwright
+          sudo npm install --production=false .
+          cd ..
+          sudo npm install ws
 
       - name: Compile .ts files to /backend/build/
         run: |
