@@ -1,6 +1,9 @@
 name: Build server and React App
 
 on:
+  push:
+    branches: [ development ]
+    
   workflow_dispatch:
 
 jobs:
