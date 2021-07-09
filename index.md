@@ -6,6 +6,6 @@
 - Design
     - [UI Design](./design.md#ui-design)
     - [Technical Design](./design.md#technical-design)
-    
+
 ### Documentation
-    - [Server-Client API](./documentation/wsapi.md)
+- [Server-Client API](./documentation/wsapi.md)
