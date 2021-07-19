@@ -130,6 +130,16 @@ class PlaywrightWrapper{
 				},
 			'recording':
 				async (task) => {
+					
+					/* 
+						Temporary, needs better solution! - when recording session starts, the browser resets itself.
+						This way, we avoid the recording/playback initial state inconsistency.
+					*/
+					if(!this._isRecording && task.data.on){
+						this._tabManager.recycleContext();
+					}
+
+
 					this._isRecording = task.data.on;
 
 					if(!this._isRecording){

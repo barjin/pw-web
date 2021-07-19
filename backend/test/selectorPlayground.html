@@ -1,0 +1,71 @@
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>PWWW Test - Selector Playground</title>
+  <meta name="author" content="barjin">
+</head>
+<style>
+    .selected{
+        background-color: pink;
+    }
+</style>
+<body>
+<h1>PWWW Selector Playground</h1>
+<p>
+    This webpage is intended for selector generator testing. It contains various elements and DOM structures to bring out the best out of the current implementation of selector generator (located in ./build/extractSelector.ts). Just click anywhere on the page and check console logs!
+</p>
+  <div id="container">
+    <div id="links">
+      <h2>
+          Links
+      </h2>
+        <p>There might be a 
+            <a href="#">link</a>, 
+            <a href="#" onclick="alert('twist!')">a link with a twist</a>, and another 
+            <a href="https://wikipedia.org">link</a>.
+        </p>
+        <p class="explanation">
+            Both first two links are anchor links (leading to the same page), differing in text and the second one having an onclick attribute, inducing a JS action. The third link's text content is identical to the first one, however, this one leads somewhere else.
+        </p>
+    </div>
+    <div id="ids_classes">
+        <h2>IDs and Classes</h2>
+        <p id="unique_paragraph">
+            Sometimes, the developers make it easy for us, assigning unique ids to the elements.
+        </p>
+        <p class="unique_class">
+            Sometimes, there is an element with unique class selector (or an <span class="child class_combination"><b>unique combination of classes</b></span>).
+        </p>
+    </div>
+    <div id="parents_children">
+        <h2>Parents and children</h2>
+        <div id="first_parent">
+            <p class="child">
+                Some children are indistinguishable from each other.
+            </p>
+        </div>
+        <div id="second_parent">
+            <p class="child">
+                Only after meeting their parents we see the differences.
+            </p>
+        </div>
+    </div>
+</div>
+<script src="../src/extractSelector.js"></script>
+<script>
+
+    let selectorHighlighter = new SelectorHighlighter();
+
+    document.addEventListener('click', (ev) => 
+    {
+        var element = document.elementFromPoint(ev.clientX, ev.clientY);
+        let selector = GetSelector(element);
+
+        console.log(selector);
+        selectorHighlighter.highlightElement(selector);
+    },true); //capture option set to true - the listener above will be called before the event is handed down to the actual target
+</script>
+</body>
+</html>

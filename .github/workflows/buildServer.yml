@@ -27,6 +27,10 @@ jobs:
           sudo chmod +x ./build.sh
           sudo ./build.sh
 
+      - name: Include additional files (tests etc.)
+        run : |
+          cp -r $GITHUB_WORKSPACE/backend/test $GITHUB_WORKSPACE/backend/build
+
       - name: Upload built .js as a job artifact
         uses: actions/upload-artifact@v2
         with:

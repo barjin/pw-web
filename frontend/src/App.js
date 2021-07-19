@@ -71,8 +71,13 @@ class BrowserUI extends Component{
           }
         break;
       case 'record':
-          this.sendAction('recording',{ on: !this.state.isRecording });
+          if(!this.state.isRecording){
+            if(!window.confirm("Starting the recording session closes all open tabs. Do you want to proceed?")){
+              break;
+            }
+          }
           this.setState(prevState => ({isRecording: !prevState.isRecording}));
+          this.sendAction('recording',{ on: this.state.isRecording });
           break;
       default:
         break;
