@@ -36,8 +36,9 @@ jobs:
       
       - name: Assemble Tampermonkey
         run : |
-          sudo chmod +x $GITHUB_WORKSPACE/backend/tools/tampermonkey/assemble-tm.sh
-          sudo $GITHUB_WORKSPACE/backend/tools/tampermonkey/assemble-tm.sh
+          cd $GITHUB_WORKSPACE/backend/tools/tampermonkey/
+          sudo chmod +x ./assemble-tm.sh
+          sudo ./assemble-tm.sh
 
       - name: Upload Tampermonkey script as artifact
         uses: actions/upload-artifact@v2
