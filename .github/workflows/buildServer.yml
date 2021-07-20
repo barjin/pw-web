@@ -27,15 +27,24 @@ jobs:
           sudo chmod +x ./build.sh
           sudo ./build.sh
 
-      - name: Include additional files (tests etc.)
-        run : |
-          sudo cp -r $GITHUB_WORKSPACE/backend/test $GITHUB_WORKSPACE/backend/build
-
-      - name: Upload built project as a job artifact
+      - name: Upload built server project as a job artifact
         uses: actions/upload-artifact@v2
         with:
           name: pwww-server
-          path: ${{github.workspace}}/backend/build/
+          path: |
+            ${{github.workspace}}/backend/build/src
+      
+      - name: Assemble Tampermonkey
+        run : |
+          sudo chmod +x $GITHUB_WORKSPACE/backend/tools/tampermonkey/assemble-tm.sh
+          sudo $GITHUB_WORKSPACE/backend/tools/tampermonkey/assemble-tm.sh
+
+      - name: Upload Tampermonkey script as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: tmscript
+          path: |
+            ${{github.workspace}}/backend/tools/tampermonkey/tmscript.user.js
   
   build-react:
     runs-on: ubuntu-latest
@@ -64,4 +73,3 @@ jobs:
         with:
           name: pwww-client
           path: ${{github.workspace}}/frontend/build/
-
