@@ -34,18 +34,18 @@ jobs:
           path: |
             ${{github.workspace}}/backend/build/src
       
-      - name: Assemble Tampermonkey
-        run : |
-          cd $GITHUB_WORKSPACE/backend/tools/tampermonkey/
-          sudo chmod +x ./assemble-tm.sh
-          sudo ./assemble-tm.sh
+      # - name: Assemble Tampermonkey
+      #   run : |
+      #     cd $GITHUB_WORKSPACE/backend/tools/tampermonkey/
+      #     sudo chmod +x ./assemble-tm.sh
+      #     sudo ./assemble-tm.sh
 
-      - name: Upload Tampermonkey script as artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: tmscript
-          path: |
-            ${{github.workspace}}/backend/tools/tampermonkey/tmscript.user.js
+      # - name: Upload Tampermonkey script as artifact
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: tmscript
+      #     path: |
+      #       ${{github.workspace}}/backend/tools/tampermonkey/tmscript.user.js
   
   build-react:
     runs-on: ubuntu-latest

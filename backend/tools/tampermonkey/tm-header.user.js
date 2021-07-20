@@ -6,6 +6,7 @@
 // @author       barjin (Jindřich Bär)
 // @match        *://*/*
 // @icon         https://playwright.dev/img/playwright-logo.svg
+// @updateURL    https://raw.githubusercontent.com/barjin/pw-web/development/backend/tools/tampermonkey/tm_script.user.js
 // @grant        GM_addStyle
 // ==/UserScript==
 
