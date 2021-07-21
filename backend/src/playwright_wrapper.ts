@@ -4,11 +4,13 @@ import type { Page } from '../playwright/src/client/page';
 import type { Browser } from '../playwright/src/client/browser';
 
 import * as types from './types';
+import * as paths from './paths';
 
 import TabManager from './tabManager';
 import WSChannel from './wsChannel';
 
-const fs = require('fs').promises;
+const fs = require('fs');
+const path = require('path');
 
 class PlaywrightWrapper{
 	private _browser : Browser = null;
@@ -139,7 +141,6 @@ class PlaywrightWrapper{
 						this._tabManager.recycleContext();
 					}
 
-
 					this._isRecording = task.data.on;
 
 					if(!this._isRecording){
@@ -188,8 +189,10 @@ class PlaywrightWrapper{
 		}
 	}
 
-	public async saveRecording(filename : string){
-		await fs.writeFile(filename, JSON.stringify(this._recording));
+	public saveRecording(filename : string){
+		if(!fs.existsSync(paths.savePath)) fs.mkdirSync(paths.savePath);
+
+		fs.writeFileSync(path.join(paths.savePath,filename), JSON.stringify(this._recording));
 	}
 
 	public enqueueTask = ( task: string ) : void => {

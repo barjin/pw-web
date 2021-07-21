@@ -3,6 +3,7 @@ const { hideBin } = require('yargs/helpers')
 
 import WSChannel from './wsChannel';
 import PlaywrightWrapper from './playwright_wrapper';
+import HTTPServer from './pwww-server/server.js';
 
 class Server{
 	browser : PlaywrightWrapper;
@@ -11,6 +12,8 @@ class Server{
 		let messagingChannel = new WSChannel(messagePort);
 		let streamChannel = new WSChannel(streamPort);
 		this.browser = new PlaywrightWrapper(messagingChannel, streamChannel);
+		let httpServer = new HTTPServer();
+		httpServer.StartServer(8000);
 	}
 }
 

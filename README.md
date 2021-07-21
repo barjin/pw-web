@@ -2,7 +2,7 @@
 An intuitive web interface for [Playwright](https://github.com/microsoft/playwright). Implemented using Node.js and React.
 
 ## Downloads
-- "Official" releases under [Tags](https://github.com/barjin/pw-web/tags) 
+- "Official" releases under [Tags](https://github.com/barjin/pw-web/tags).
 - Latest commit builds as job artifacts under [Actions](https://github.com/barjin/pw-web/actions).
 - [Tampermonkey Selector Generator/Tester](https://raw.githubusercontent.com/barjin/pw-web/development/backend/tools/tampermonkey/tm_script.user.js).
 

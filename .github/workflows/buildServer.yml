@@ -27,25 +27,16 @@ jobs:
           sudo chmod +x ./build.sh
           sudo ./build.sh
 
+      - name: Copy REST server files into build folder
+        run: |
+          sudo cp -r $GITHUB_WORKSPACE/backend/src/pwww-server/ $GITHUB_WORKSPACE/backend/build/src
+
       - name: Upload built server project as a job artifact
         uses: actions/upload-artifact@v2
         with:
           name: pwww-server
           path: |
             ${{github.workspace}}/backend/build/src
-      
-      # - name: Assemble Tampermonkey
-      #   run : |
-      #     cd $GITHUB_WORKSPACE/backend/tools/tampermonkey/
-      #     sudo chmod +x ./assemble-tm.sh
-      #     sudo ./assemble-tm.sh
-
-      # - name: Upload Tampermonkey script as artifact
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: tmscript
-      #     path: |
-      #       ${{github.workspace}}/backend/tools/tampermonkey/tmscript.user.js
   
   build-react:
     runs-on: ubuntu-latest
