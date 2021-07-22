@@ -27,10 +27,6 @@ jobs:
           sudo chmod +x ./build.sh
           sudo ./build.sh
 
-      - name: Copy REST server files into build folder
-        run: |
-          sudo cp -r $GITHUB_WORKSPACE/backend/src/pwww-server/ $GITHUB_WORKSPACE/backend/build/src
-
       - name: Upload built server project as a job artifact
         uses: actions/upload-artifact@v2
         with:
