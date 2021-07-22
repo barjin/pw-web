@@ -17,12 +17,8 @@ export default function App() {
     <Router>
       <div>
         <Switch>
-          <Route path="/">
-            <HomeScreen />
-          </Route>
-          <Route path="/recording">
-            <RecordingScreen />
-          </Route>
+          <Route path="/recording" component={RecordingScreen}/>
+          <Route path="/" component={HomeScreen}/>
         </Switch>
       </div>
     </Router>

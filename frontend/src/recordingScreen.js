@@ -5,6 +5,7 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 
+import querystring from 'querystring';
 import {Component} from 'react';
 
 
@@ -144,23 +145,50 @@ class StreamWindow {
   }
 }
 
-function RecordingScreen() {
-  // !! Needs better design (more responsive)!
+class RecordingScreen extends Component {
+  constructor(props){
+    super(props);
+    this.state = {
+      props: props,
+      loading: true,
+      recording: []
+    }
+  }
 
-  return (
-    <div className="App">
-      <Container fluid>
-        <Row style={{height:10+'vh', lineHeight: 10+'vh'}}>
-          <Col md={2}>
-            <p id="goBack" style={{fontSize: 120+"%"}}>&lt; Recording name</p>
-          </Col>
-        </Row>
-        <Row style={{height:90+'vh'}}>
-            <BrowserUI/>
-        </Row>
-      </Container>
-    </div>
+  componentDidMount(){
+    this.setState({loading: true});
+
+    let query = querystring.parse(this.state.props.location.search.slice(1));
+
+    fetch("http://localhost:8000/api/recording?id="+query.id).then(x => x.json())
+    .then((response) =>
+    {
+        this.setState({
+          loading: false,
+          recording: response
+        });
+    })
+  }
+
+  render(){
+    return (
+      this.state.loading ? <p>loading...</p> : (
+        !this.state.recording.ok ? <p>this recording is broken. <a href="../">Go back...</a></p> :
+        <div className="App">
+        <Container fluid>
+          <Row style={{height:10+'vh', lineHeight: 10+'vh'}}>
+            <Col md={2}>
+              <p id="goBack" style={{fontSize: 120+"%"}}><a href="../">&lt; {this.state.recording.data.name}</a></p>
+            </Col>
+          </Row>
+          <Row style={{height:90+'vh'}}>
+              <BrowserUI/>
+          </Row>
+        </Container>
+        </div>
+      )
   );
+  }
 }
 
 export default RecordingScreen;

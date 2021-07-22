@@ -9,21 +9,50 @@ class RecordingsTable extends Component{
     constructor(props){
         super(props);
         this.columns = ["Name", "Modified on"];
-        this.fields = ["name", "createdOn"];
         this.state = {
                       loading: true,
                       recordings: []
         };
     }
 
-    componentDidMount(){
+    loadRecordings = () =>{
         this.setState({loading: true});
-        fetch("http://localhost:8000/recordings").then(x => x.json()).then(recordings => {
+        fetch("http://localhost:8000/api/recordings").then(x => x.json()).then(recordings => {
             this.setState({
                 loading: false,
-                recordings: recordings
-            });
+                recordings: recordings.data
+            })
+        }).catch(e => {
+            this.setState({
+                loading: false,
+                recordings: []
+            })
         });
+    }
+
+    componentDidMount(){
+        this.loadRecordings();
+    }
+
+    renameDialog(recordingId){
+        let newName = prompt("Enter new recording name...");
+        fetch('http://localhost:8000/api/renameRecording', {
+            method: 'POST',
+            headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({id: recordingId, newName : newName})
+        }).then(x => x.json()).then(
+            response => {
+                if(response.ok){
+                    this.loadRecordings();
+                }
+                else{
+                    alert(response.data);
+                }
+            }
+        );
     }
 
     render(){
@@ -45,9 +74,8 @@ class RecordingsTable extends Component{
                 :
                 this.state.recordings.map(x => (
                 <tr key={x.id}>
-                    {this.fields.map((field, id) =>
-                        <td key={id}>{x[field]}</td>
-                    )}
+                    <td><a href={"/recording?id=" + x.id}>{x.name}</a><a onClick={() => this.renameDialog(x.id)}>rename</a></td>
+                    <td>{x.createdOn}</td>
                 </tr>
                 ))
                 }

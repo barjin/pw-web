@@ -62,7 +62,7 @@ class PlaywrightWrapper{
 				.catch(console.error);
 		}
 		else{
-			console.error("Browser is not running, cannot send screenshot!");
+			console.error("[PWWW] Browser is not running, cannot send screenshot!");
 		}
 	}
 
@@ -161,7 +161,7 @@ class PlaywrightWrapper{
 			let task = this._actionQueue.shift();
 			if(task.type in actionList){
 
-				console.log("Executing " + task.type + "...");
+				console.log("[PWWW] Executing " + task.type + "...");
 
 				let [actionWithContext, _] = await Promise.all(
 					[
@@ -184,7 +184,7 @@ class PlaywrightWrapper{
 				this.sendScreenshot(); // is this the correct time to send screenshots? (after every single action?)
 			}
 			else{
-				console.error("Invalid task type! " + JSON.stringify(task));
+				console.error("[PWWW] Invalid task type! " + JSON.stringify(task));
 			}
 		}
 	}
