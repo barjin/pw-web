@@ -8,6 +8,6 @@ sudo npm install --production=false .
 cd ..
 echo "Compiling pwww-server ts to js..."
 sudo tsc
-cp ./package.json ./build/src
+sudo cp ./package.json ./build/backend/src
+sudo rm -r ./build/backend/playwright
 echo "pwww-server has been successfully built!"
-ls ./build/src

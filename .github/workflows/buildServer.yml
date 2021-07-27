@@ -1,4 +1,4 @@
-name: Build server and React App
+name: Build Application
 
 on:
   push:
@@ -21,43 +21,29 @@ jobs:
         with:
           node-version: '14'
 
-      - name: Install dependencies and build project
+      - name: (Server) Install dependencies and build project
         run : |
           cd $GITHUB_WORKSPACE/backend/tools
           sudo chmod +x ./build.sh
           sudo ./build.sh
 
-      - name: Upload built server project as a job artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: pwww-server
-          path: |
-            ${{github.workspace}}/backend/build/src
-  
-  build-react:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      
-      - name: Install node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-
-      - name: Install project and dependencies
+      - name: (React) Install project and dependencies
         run : |
           cd $GITHUB_WORKSPACE/frontend
           sudo npm install .
       
-      - name: Build React App
+      - name: (React) Build React App
         run: |
           cd $GITHUB_WORKSPACE/frontend
           sudo npm run build
       
+      - name: (React) Copy app to server folder
+        run: |
+          sudo mv $GITHUB_WORKSPACE/frontend/build/ $GITHUB_WORKSPACE/backend/build/www
+
       - name: Upload built app as a job artifact
         uses: actions/upload-artifact@v2
         with:
-          name: pwww-client
-          path: ${{github.workspace}}/frontend/build/
+          name: pwww-server
+          path: |
+            ${{github.workspace}}/backend/build

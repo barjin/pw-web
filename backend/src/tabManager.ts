@@ -3,12 +3,14 @@ import type { Browser } from '../playwright/src/client/browser';
 import type { BrowserContext } from '../playwright/src/client/browserContext';
 
 import type { Page } from '../playwright/src/client/page';
+import { BindingSource } from '../playwright/types/structs';
 
 export type TabList = {currentTab: number, tabs: string[]};
 
 class TabManager extends EventEmitter {
-    private _browser : Browser
-    public currentPage : Page
+    private _browser : Browser;
+    private _injections : ({path:string}|Function)[] = [];
+    public currentPage : Page;
 
     constructor(browser : Browser){
         super();
@@ -67,6 +69,10 @@ class TabManager extends EventEmitter {
             this.notifyStateChange()
         });
 
+        for(let injected of this._injections){
+            await this.currentPage.addInitScript(injected);
+        }
+
 		await this.currentPage.goto(typeof(url) === "string" ? url : homeURL);
 	}
 
@@ -79,6 +85,17 @@ class TabManager extends EventEmitter {
         }
             
         this.notifyStateChange();
+    }
+
+    // The argument is either a JS function or an object with a path to a script (see documentation of Page.addInitScript)
+    // Once registered, the injected script survives reloads and navigation.
+    public async injectToAll(arg: (Function|{path: string})) : Promise<void>{
+        this._injections.push(arg);
+
+        for(let page of this._pages){
+            await page.addInitScript(arg);
+            await page.reload();
+        }
     }
 
     // switchTabs does not have to be async, since Playwright internally does not 'switch' tabs,

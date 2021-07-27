@@ -9,14 +9,16 @@ export enum BrowserAction {
     'switchTabs',
     'closeTab',
 
+    'reset',
     'playRecording',
     'recording',
     'noop'
 }
 
 export type Action = {
+    'id': number,
     'type' : BrowserAction,
-    'data' : object
+    'data' : any
 }
 
 export type RecordedAction = {

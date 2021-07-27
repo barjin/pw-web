@@ -78,6 +78,18 @@ class APIHandler {
         }
     }
 
+    private _newRecording(req, res){
+        try{
+            let filename = req.body.name;
+            if(!fs.existsSync(paths.savePath)) fs.mkdirSync(paths.savePath);
+            if(fs.existsSync(path.join(paths.savePath, filename))) throw "Name already in use.";
+            fs.writeFile(path.join(paths.savePath, filename), "[]", ()=>res.json({ok:true}));
+        }
+        catch(e){
+            this._error(res,e);
+        }
+    }
+
     routeAPIGetRequest = (req, res) => {
         console.log(`[REST] GET request at ${req.path}`)
 
@@ -102,6 +114,9 @@ class APIHandler {
             case '/api/renameRecording':
                 this._renameRecording(req, res);        
                 break;
+            case '/api/newRecording':
+                this._newRecording(req, res);        
+                break;
             default:
                 this._error(res,"Invalid action!");      
                 break;
@@ -124,7 +139,11 @@ class HTTPServer {
         app.get('/api*', this._apiHandler.routeAPIGetRequest);
         app.post('/api*', this._apiHandler.routeAPIPostRequest);
 
-        app.use('/', express.static('www'));
+        
+        app.use('/static/',express.static(path.join(__dirname, "..", paths.wwwPath, "static")));
+        app.get(/^.*\/static\/(.*)$/, (req,res)=> res.redirect("/static/" + req.params[0]));
+
+        app.get(['/','/recording'], (_,res) => {res.sendFile(path.join(__dirname,"..",paths.wwwPath,"index.html"))});
 
         app.listen(port, () => {
             console.log(`Example app listening at http://localhost:${port}`)

@@ -2,10 +2,6 @@
     CSS selector generator (analyzes given node and tries to create the best fitting selector)
 */
 class SelectorGenerator{
-    constructor(){
-        return;
-    }
-
     private _isUniqueCss(selector : string, root : ParentNode = document) : boolean{
         if(root === document){
             return root.querySelectorAll(selector).length === 1;
@@ -141,3 +137,6 @@ class SelectorHighlighter {
         this._activeElement.classList.add('pwww_selected');
     }
 }
+
+window["SelectorGenerator"] = SelectorGenerator;
+window["SelectorHighlighter"] = SelectorHighlighter;
