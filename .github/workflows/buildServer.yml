@@ -37,9 +37,11 @@ jobs:
           cd $GITHUB_WORKSPACE/pwww-web
           sudo npm run build
       
-      - name: (React) Copy app to server folder
+      - name: (React) Copy app and shared code to build folder
         run: |
           sudo mv $GITHUB_WORKSPACE/pwww-web/build/ $GITHUB_WORKSPACE/pwww-server/build/www
+          sudo cp -r $GITHUB_WORKSPACE/pwww-shared/ $GITHUB_WORKSPACE/pwww-server/build/pwww-shared
+          sudo rm $GITHUB_WORKSPACE/pwww-server/build/pwww-shared/types.ts
 
       - name: Upload built app as a job artifact
         uses: actions/upload-artifact@v2
