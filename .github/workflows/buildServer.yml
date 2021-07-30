@@ -46,4 +46,4 @@ jobs:
         with:
           name: pwww-bundle
           path: |
-            ${{github.workspace}}/backend/build
+            ${{github.workspace}}/pwww-server/build
