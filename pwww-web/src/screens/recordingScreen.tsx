@@ -9,26 +9,24 @@ import querystring from 'querystring';
 import {Component} from 'react';
 import ACKChannel from '../ACKChannel';
 
+import * as types from 'pwww-shared/types';
+
 import '../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 interface IBrowserProps {
-  recording: {ok: boolean, data: {name: string, recording: object[]}}
+  recording: types.APIResponse<{
+    name: string, 
+    recording: types.RecordedAction[]
+  }>
 }
 
-interface IBrowserState {
-  tabState: {currentTab: number, tabs: string[]},
-  isRecording: boolean,
-  currentActionIdx: number,
-  recording: {where: object, what: {type: string, data: object}}[]
-}
-
-class BrowserUI extends Component<IBrowserProps,IBrowserState>{
+class BrowserUI extends Component<IBrowserProps,types.BrowserState>{
   private _canvas : StreamWindow|null = null;
   private _messageChannel : ACKChannel|null = null;
   private _streamChannel : WebSocket|null = null;
   
-  constructor(props : any){
+  constructor(props : IBrowserProps){
     super(props);
   
     this.state = {
@@ -42,7 +40,7 @@ class BrowserUI extends Component<IBrowserProps,IBrowserState>{
 
   private _broadcastMsgHandler = (obj : object) => {
     if("tabs" in obj){
-      this.setState({tabState: (obj as IBrowserState["tabState"])});
+      this.setState({tabState: (obj as types.BrowserState["tabState"])});
     }
   }
 
@@ -64,29 +62,41 @@ class BrowserUI extends Component<IBrowserProps,IBrowserState>{
     });
   }
 
-  requestAction = (type: string, data: object) => {
-    this._messageChannel?.request({type:type, data: data}).then(newAction => {
+  requestAction = (actionType: types.BrowserAction, data: object) => {
+    this._messageChannel?.request({type: types.BrowserAction[actionType], data: data})
+    .then(newAction => {
       if(this.state.isRecording){
-        this.setState(prevState => ({recording: [...prevState.recording, newAction.currentAction]}));
+        this.setState(prevState => ({recording: [...prevState.recording, (newAction as {currentAction: types.RecordedAction}).currentAction]}));
       }
     });
   }
 
-  playRecording = () => {
+  playRecording = () : Promise<void> => {
     if(this.state.recording){ //!== []
       /* Sends all actions to server, waits for ACK after every sent action. */
-      [{idx: -1, type: 'reset',data: {}},
+      return [{idx: -1, type: 'reset',data: {}},
         ...this.state.recording.map((x, idx) => ({idx: idx, type: (x.what.type), data: x.what.data}))
       ].reduce((p : Promise<any>, action) => {
           return p.then(() => {
             this.setState({currentActionIdx: action.idx});
             return this._messageChannel?.request(action);
           });
-        }, Promise.resolve());
+        }, Promise.resolve())
+        .then(() =>
+          this.setState({currentActionIdx: -1}) // removes highlight after playback
+        );
     };
+    return Promise.resolve();
   }
 
-  recordingControl = (action : any) => {
+  insertText = () => {
+    let text = prompt("Enter text to paste to the website:");
+    if(text !== null && text !== ""){
+      this.requestAction(types.BrowserAction.insertText, {text: text});
+    }
+  }
+
+  recordingControl = (action : string) => {
     switch (action) {
       case 'play':
           if(window.confirm("Starting the playback closes all open tabs. Do you want to proceed?")){
@@ -99,11 +109,15 @@ class BrowserUI extends Component<IBrowserProps,IBrowserState>{
             if(!window.confirm("Starting the recording session closes all open tabs. Do you want to proceed?")){
               break;
             }
+
+            if(!this.state.recording){
+              this._messageChannel?.send({type: 'reset', data: {}}); 
+            }
           }
-          this.setState(prevState => ({isRecording: !prevState.isRecording}), 
-            ()=>{ 
-              if(this.state.isRecording) this._messageChannel?.send({type: 'reset', data: {}}); 
-            });
+
+          (!this.state.isRecording ? this.playRecording() : Promise.resolve()).then( () =>
+            this.setState(prevState => ({isRecording: !prevState.isRecording}))
+          );
           break;
       default:
         break;
@@ -119,6 +133,7 @@ class BrowserUI extends Component<IBrowserProps,IBrowserState>{
       <Col xs={9}>
         <Container fluid>
         <ToolBar tabState={this.state.tabState} navigationCallback={this.requestAction} />
+        <a href="#" onClick={this.insertText}>Insert Text</a>
         <Row>
           <canvas 
           id="videostream"
@@ -137,7 +152,7 @@ class BrowserUI extends Component<IBrowserProps,IBrowserState>{
 class StreamWindow {
   private _canvas : HTMLCanvasElement;
 
-  constructor(actionSender : (type: string, data: object) => void){
+  constructor(actionSender : (actionType: types.BrowserAction, data: object) => void){
     this._canvas = document.getElementById("videostream") as HTMLCanvasElement;
 
     this._canvas.addEventListener('click', (ev) => {
@@ -146,15 +161,11 @@ class StreamWindow {
         x: (1280/canvasPos.width)*(ev.clientX - canvasPos.left), 
         y: (720/canvasPos.height)*(ev.clientY - canvasPos.top)
       };
-      actionSender('click', click);
+      actionSender(types.BrowserAction.click, click);
     });
-
-    // this._canvas.addEventListener('keydown', (ev) => {
-    //   actionSender('keydown',{key: ev.code});
-    // });
   }
 
-  drawToCanvas = (image: any) => {
+  drawToCanvas = (image: Blob) => {
     let ctx = this._canvas.getContext('2d');
     let background = new Image();
     background.src = URL.createObjectURL(image);
@@ -178,7 +189,7 @@ interface IRecScreenState {
 }
 
 class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
-  constructor(props :any){
+  constructor(props : IRecScreenProps){
     super(props);
     this.state = {
       props: props,
@@ -220,7 +231,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
             </Col>
           </Row>
           <Row style={{height:90+'vh'}}>
-              <BrowserUI recording={this.state.recording}/>
+              <BrowserUI recording={this.state.recording as IBrowserProps['recording']}/>
           </Row>
         </Container>
         </div>

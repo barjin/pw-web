@@ -1,9 +1,7 @@
 const EventEmitter = require('events');
 import type { Browser } from '../playwright/src/client/browser';
-import type { BrowserContext } from '../playwright/src/client/browserContext';
 
 import type { Page } from '../playwright/src/client/page';
-import { BindingSource } from '../playwright/types/structs';
 
 export type TabList = {currentTab: number, tabs: string[]};
 

@@ -4,7 +4,7 @@ class ACKChannel {
     private _pendingActions : 
       {
        id: number, 
-       resolve: (response?: unknown) => void, 
+       resolve: (response: object) => void, 
        reject: (reason: any) => void
       }[] = [];
     
@@ -17,7 +17,7 @@ class ACKChannel {
       this._WSChannel.addEventListener('message',this.messageReceiver);
     }
   
-    request = (data: object) : Promise<any> => {
+    request = (data: object) : Promise<object> => {
         return new Promise((resolve,reject) => {
           this._pendingActions.push({id: this._messageID, resolve: resolve, reject: reject});
           this.send({id: this._messageID, ...data});

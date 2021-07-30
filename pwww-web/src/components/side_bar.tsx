@@ -7,7 +7,21 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Spinner from 'react-bootstrap/Spinner';
 
-function SideBar(props : {control: any, state: {isRecording: boolean, recording: any, currentActionIdx: number}}) : JSX.Element {
+import {useRef} from 'react';
+
+import * as types from 'pwww-shared/types';
+import { useEffect } from 'react';
+
+type SideBarProps = {
+  control : (action: string) => void,
+  state: {
+    isRecording: boolean, 
+    recording: types.RecordedAction[], 
+    currentActionIdx: number
+  }
+}
+
+function SideBar(props : SideBarProps) : JSX.Element {
     return (
       <Container style={{height: 90+'vh'}}>
         <Row style={{marginBottom: 10+"px"}}>
@@ -28,13 +42,16 @@ function SideBar(props : {control: any, state: {isRecording: boolean, recording:
     );
 }
 
-function CodeList(props : any) : JSX.Element {
-  const showAttrs = ["selector", "url"];
+function CodeList(props : SideBarProps['state']) : JSX.Element {
+  const showAttrs = ["selector", "url", "currentTab", "closing", "text"];
+  const ref = useRef(null);
+
+  useEffect(()=>(ref.current as any)?.scrollIntoView());
 
   return (
   <>{
-  [...props.recording.map((action : any, idx: number ) => (
-    <Alert key={idx} variant= {props.currentActionIdx === idx ? "primary" : "secondary"}>
+  [...props.recording.map((action : types.RecordedAction, idx: number ) => (
+    <Alert key={idx} ref={props.currentActionIdx === idx ? ref : null} variant= {props.currentActionIdx === idx ? "primary" : "secondary"}>
       <Alert.Heading>{action.what.type}</Alert.Heading>
       <hr></hr>
       {

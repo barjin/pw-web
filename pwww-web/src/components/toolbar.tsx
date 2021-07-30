@@ -9,12 +9,21 @@ import InputGroup from 'react-bootstrap/InputGroup';
 
 import {useState} from "react";
 
+import * as types from 'pwww-shared/types'
 
-function ToolBar(props : any) {
+type ToolBarProps = {
+  tabState: types.BrowserState['tabState'],
+  navigationCallback : (action : types.BrowserAction, data: object) => void
+}
+
+function ToolBar(props: ToolBarProps) {
 
   const navigate = (ev : React.MouseEvent<HTMLElement>) => {
     if(ev.currentTarget !== null){
-      props.navigationCallback('navigate',{ back: ((ev.currentTarget as HTMLElement).id === "nav_back") });
+      props.navigationCallback(
+        types.BrowserAction.navigate,
+        { back: ((ev.currentTarget as HTMLElement).id === "nav_back") }
+      );
     }
   }
 
@@ -22,7 +31,10 @@ function ToolBar(props : any) {
 
   const browse = (ev: React.FormEvent<HTMLFormElement>) => {
       ev.preventDefault();
-      props.navigationCallback('browse', {url: address});
+      props.navigationCallback(
+        types.BrowserAction.browse, 
+        {url: address}
+      );
       (document.getElementById("addressBar") as HTMLInputElement).value = "";
   }
 
@@ -59,10 +71,6 @@ interface IBrowserTabProps{
 }
 
 function BrowserTab(props: IBrowserTabProps){
-    // shouldComponentUpdate(prevProps){
-    //   return (this.props.title !== prevProps.title || this.props.active !== prevProps.active);
-    // }
-  
     return(
     <ButtonGroup style={{marginRight: 5+"px"}}>
       <Button onClick={() => props.clickHandler(props.tab_id)} variant={props.active ? "dark" : "secondary"}>
@@ -74,25 +82,34 @@ function BrowserTab(props: IBrowserTabProps){
   };
 
 interface ITabBarProps{
-  callback : (type: string, data: object) => void;
+  callback : ToolBarProps['navigationCallback']
   tabState: {currentTab: number, tabs: string[]};
 }
 
 function TabBar(props: ITabBarProps){
     const tabClick = (id: number) => {
-      props.callback('switchTabs',{currentTab: id});
+      props.callback(
+        types.BrowserAction.switchTabs,
+        {currentTab: id}
+      );
       console.log("Switching tabs (current tab is: " +  id + ")");
     }
   
     const addTab = (_: number) => { 
-      props.callback('openTab',{});
+      props.callback(
+        types.BrowserAction.openTab,
+        {}
+      );
     }
   
     const closeTab = (id: number) => {
       if (props.tabState.tabs.length === 1) {
         return;
       }
-      props.callback('closeTab',{closing: id});
+      props.callback(
+        types.BrowserAction.closeTab,
+        {closing: id}
+      );
     }
   
     return (
@@ -102,7 +119,7 @@ function TabBar(props: ITabBarProps){
         {props.tabState.tabs.map((tab,id) => 
         (
             <BrowserTab
-            title={tab}    
+            title={tab?.length > 15 ? tab.substring(0,15)+"…": tab}    
             
             tab_id = {id}
 

@@ -52,12 +52,12 @@ class SelectorGenerator{
         //      Class selector is disabled for now (complicated XPATH translation). 
         let innerText = "";
         if(element.innerText !== ""){
-            innerText = ":text(\"" + 
+            innerText = ":has-text(\"" + 
                 ((element.innerText.length < 30) ? element.innerText : element.innerText.slice(0,30))
             + "\")"
         }
 
-        return element.tagName + innerText;
+        return element.tagName + innerText.replace(/([\n\r]|\r\n)/gm, " ");
     }
 }
 
@@ -121,7 +121,7 @@ class SelectorHighlighter {
     }
 
     highlightElement = (selector : string) : void => {
-        const pwSelectorRegex : RegExp = /(?<selectors>.*?):text\(\"(?<text>.*?)\"\).*/s;
+        const pwSelectorRegex : RegExp = /(?<selectors>.*?):has-text\(\"(?<text>.*?)\"\).*/s;
         let selectorMatch : RegExpExecArray = pwSelectorRegex.exec(selector);
 
         if(selectorMatch){

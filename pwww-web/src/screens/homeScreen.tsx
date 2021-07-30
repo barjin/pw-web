@@ -3,12 +3,13 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table'
 
+import * as types from 'pwww-shared/types';
 import { Component } from 'react';
 
 const api_url = "http://localhost:8000/api/"
 
 // Returns thenable with js object with response
-function postReqAPI(endpoint : string, body : object) : Promise<any> {
+function postReqAPI(endpoint : string, body : object) : Promise<types.APIResponse<object>> {
     return fetch(api_url + endpoint, {
         method: 'POST',
         headers: {

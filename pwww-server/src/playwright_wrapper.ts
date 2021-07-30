@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
 import type { Page } from '../playwright/src/client/page';
 import type { Browser } from '../playwright/src/client/browser';
 
-import * as types from '../../common/types';
+import * as types from 'pwww-shared/types';
 
 import TabManager from './tabManager';
 import WSChannel from './wsChannel';
@@ -159,14 +159,17 @@ class PlaywrightWrapper{
 
 			// 		return types.EmptyRecord;
 			// 	},
+			'insertText': async (task) => {
+				await this._currentPage.keyboard.insertText(task.data.text);
+				return task;
+			},
 			'reset': async () => {
 				await this._tabManager.recycleContext();
 				return types.EmptyRecord;
 			},
 			'recording': async () => (types.EmptyRecord),
 			'playRecording': async () => (types.EmptyRecord),
-			'noop': async () => (types.EmptyRecord),
-			'keydown': async () => (types.EmptyRecord)
+			'noop': async () => (types.EmptyRecord)
         };
 
 		if(this._browser === null || !this._browser.isConnected()){
