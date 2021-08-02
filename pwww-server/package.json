@@ -6,10 +6,10 @@
         "cors": "^2.8.5",
         "express": "^4.17.1",
         "playwright": "^1.12.3",
+        "pwww-shared": "file:../pwww-shared",
         "typescript": "^4.3.5",
         "ws": "^7.5.2",
-        "yargs": "^17.0.1",
-        "pwww-shared": "file:../pwww-shared"
+        "yargs": "^17.0.1"
     },
     "bin": "./pwwwServer.js"
 }

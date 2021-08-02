@@ -1,6 +1,84 @@
 /*
     CSS selector generator (analyzes given node and tries to create the best fitting selector)
 */
+
+enum CharType {
+    VOWEL,
+    CONSONANT,
+    NONALPHA
+}
+
+function MarkovScore(string: string) : number {
+    const vowels = ['a','e','i','o','u','y'];
+    const consonants = ['b','c','d','f','g','j','k','l','m','n','p','q','s','t','v','x','z','h','r','w'];
+
+    const classifyChar = (char : string) : CharType => {
+        if(vowels.includes(char)){
+            return CharType.VOWEL;
+        }
+        else if(consonants.includes(char)){
+            return CharType.CONSONANT;
+        }
+        return CharType.NONALPHA;
+    }
+
+    //DISCLAIMER - ALL the values have been eyeballed and are a result of an educated guess (mainly punishing long sequences of non-alphabetical symbols)
+    const transitions = [   
+        [0.45,0.50,0.05], //vowels
+        [0.50,0.45,0.05],  //consonants
+        [0.49,0.49,0.02] //non-alpha
+    ];
+
+    let score = 1;
+    let charType, nextCharType;
+    
+    if(string.length === 0){
+        return 0;
+    }
+
+    string = string.toLowerCase();
+    charType = classifyChar(string[0]);
+    for(let i = 0; i < string.length-1; i++){
+        nextCharType = classifyChar(string[i+1]);
+        score *= transitions[charType][nextCharType];
+        charType = nextCharType
+    }
+    
+    return score*Math.pow(2,string.length);
+}
+
+/* Calculates (Euclidean Distance)^2 between two vectors */
+function EuclideanDistanceSq(vecA: number[], vecB: number[]) : number{
+    if(vecA.length !== vecB.length){
+        throw "Vectors of different size!";
+    }
+    return vecA.reduce((acc,x,id) => (acc + (x - vecB[id]) * (x - vecB[id])), 0);
+}
+// /*
+//     Tries to determine whether `input` is a human-readable string or a procedurally generated nonsense.
+// */
+// function readabilityScore(input : string) : number {
+//     var input = input.toLowerCase();
+
+//     let vowelCount = input.match(/[a|e|i|o|u|y]/g)?.length || 0;
+//     let consonantCount = input.match(/[b|c|d|f|g|j|k|l|m|n|p|q|s|t|v|x|z|h|r|w]/g)?.length || 0;
+
+//     let restCount = input.length - vowelCount - consonantCount;
+
+//     // Might possibly break (for example) for consonant-heavy languages.
+//     const standard_distribution = [0.3,0.6,0.1];
+//     const current_distibution = [vowelCount/input.length, consonantCount/input.length, restCount/input.length];
+
+//     console.log(current_distibution);
+//     /* 
+//         The distribution vectors are Manhattan-normalized (the coordintates sum up to 1).
+//         The biggest (Euclidean) distance between two points on the Mathattan unit sphere is 2 (from one vertex of the "sphere"-cube to the opposite).
+//         This function returns normalized, "inversed" distance - the higher the score, the better.
+//         Euclidean distance is probably not necessary, Manhattan metric would work just as well (though threshold for meaningful scripts would be different).
+//     */
+//     return 1-(EuclideanDistanceSq(standard_distribution, current_distibution))/2;
+// }
+
 class SelectorGenerator{
     private _isUniqueCss(selector : string, root : ParentNode = document) : boolean{
         if(root === document){
@@ -27,12 +105,22 @@ class SelectorGenerator{
             // Base condition for the recursive approach.
             return "BODY";
         }
+
+        // Optional (but very useful) attributes, sorted by usefulness
+        const attributes = [
+            "id",   //in CSS, #id === [id=...] ???
+            "href",
+            "accesskey",
+            "title"
+        ]
     
-        if(element.id !== ""){
-            //The best possible outcome, ids should be unique, therefore targetting one specific element.
-            return "#"+element.id;
+        for(let attr of attributes){
+            if(element.getAttribute(attr) !== null){
+                return `[${attr}="${element.getAttribute(attr)}"]`;
+            }
         }
-        else if (element.className !== ""){
+
+        if (element.className !== ""){
             /* 
                 Otherwise we combine all element's classes and hope for the best (is this the best idea?)
                 Is it OK to assume that classes are more specific than html tags?
