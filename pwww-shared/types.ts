@@ -34,7 +34,10 @@ export type BrowserState = {
     tabState: {currentTab: number, tabs: string[]},
     isRecording: boolean,
     currentActionIdx: number,
-    recording: RecordedAction[];
+    recording: {
+        name: string,
+        recording: RecordedAction[]
+    }
 }
 
 export const EmptyRecord = {type: BrowserAction.noop, data: {}};

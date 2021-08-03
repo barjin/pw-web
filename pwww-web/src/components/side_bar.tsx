@@ -16,7 +16,7 @@ type SideBarProps = {
   control : (action: string) => void,
   state: {
     isRecording: boolean, 
-    recording: types.RecordedAction[], 
+    recording: types.BrowserState["recording"],
     currentActionIdx: number
   }
 }
@@ -50,7 +50,7 @@ function CodeList(props : SideBarProps['state']) : JSX.Element {
 
   return (
   <>{
-  [...props.recording.map((action : types.RecordedAction, idx: number ) => (
+  [...props.recording.recording.map((action : types.RecordedAction, idx: number ) => (
     <Alert key={idx} ref={props.currentActionIdx === idx ? ref : null} variant= {props.currentActionIdx === idx ? "primary" : "secondary"}>
       <Alert.Heading>{action.what.type}</Alert.Heading>
       <hr></hr>

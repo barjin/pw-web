@@ -2,23 +2,9 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table'
-
-import * as types from 'pwww-shared/types';
 import { Component } from 'react';
 
-const api_url = "http://localhost:8000/api/"
-
-// Returns thenable with js object with response
-function postReqAPI(endpoint : string, body : object) : Promise<types.APIResponse<object>> {
-    return fetch(api_url + endpoint, {
-        method: 'POST',
-        headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-    }).then(x => x.json());
-}
+import { postAPI, getAPI } from '../restAPI'
 
 interface IEmpty {};
 
@@ -40,10 +26,10 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
 
     loadRecordings = () : void => {
         this.setState({loading: true});
-        fetch(api_url + "recordings").then(x => x.json()).then(recordings => {
+        getAPI("recordings").then(recordings => {
             this.setState({
                 loading: false,
-                recordings: recordings.data
+                recordings: (recordings.data as any)
             })
         }).catch(e => {
             this.setState({
@@ -60,7 +46,7 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
     renameDialog(recordingId : number){
         let newName = prompt("Enter new recording name...");
         if(newName !== null){
-            postReqAPI("renameRecording", {id: recordingId, newName : newName})
+            postAPI("renameRecording", {id: recordingId, newName : newName})
             .then(
                 response => {
                     if(response.ok){
@@ -77,7 +63,7 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
     addNewRecording(){
         let name = prompt("Enter new recording name...");
         if(name !== null){
-            postReqAPI("newRecording",{name: name})
+            postAPI("newRecording",{name: name})
             .then(
                 response => {
                     if(response.ok){

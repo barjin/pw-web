@@ -1,15 +1,16 @@
-import ToolBar from '../components/toolbar';
-import SideBar from '../components/side_bar';
-
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
+import {Component} from 'react';
+
+import ToolBar from '../components/toolbar';
+import SideBar from '../components/side_bar';
 
 import querystring from 'querystring';
-import {Component} from 'react';
-import ACKChannel from '../ACKChannel';
 
+import ACKChannel from '../ACKChannel';
 import * as types from 'pwww-shared/types';
+import {postAPI} from '../restAPI';
 
 import '../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -34,7 +35,7 @@ class BrowserUI extends Component<IBrowserProps,types.BrowserState>{
       
       isRecording: false,
       currentActionIdx: -1,
-      recording: props.recording.data.recording
+      recording: props.recording.data
     };
   }
 
@@ -66,7 +67,7 @@ class BrowserUI extends Component<IBrowserProps,types.BrowserState>{
     this._messageChannel?.request({type: types.BrowserAction[actionType], data: data})
     .then(newAction => {
       if(this.state.isRecording){
-        this.setState(prevState => ({recording: [...prevState.recording, (newAction as {currentAction: types.RecordedAction}).currentAction]}));
+        this.setState(prevState => ({recording: {name: prevState.recording.name, recording: [...prevState.recording.recording, (newAction as {currentAction: types.RecordedAction}).currentAction]}}));
       }
     });
   }
@@ -75,7 +76,7 @@ class BrowserUI extends Component<IBrowserProps,types.BrowserState>{
     if(this.state.recording){ //!== []
       /* Sends all actions to server, waits for ACK after every sent action. */
       return [{idx: -1, type: 'reset',data: {}},
-        ...this.state.recording.map((x, idx) => ({idx: idx, type: (x.what.type), data: x.what.data}))
+        ...this.state.recording.recording.map((x, idx) => ({idx: idx, type: (x.what.type), data: x.what.data}))
       ].reduce((p : Promise<any>, action) => {
           return p.then(() => {
             this.setState({currentActionIdx: action.idx});
@@ -109,10 +110,12 @@ class BrowserUI extends Component<IBrowserProps,types.BrowserState>{
             if(!window.confirm("Starting the recording session closes all open tabs. Do you want to proceed?")){
               break;
             }
-
-            if(!this.state.recording){
+            if(!this.state.recording){ //recording === []
               this._messageChannel?.send({type: 'reset', data: {}}); 
             }
+          }
+          else{
+            postAPI("updateRecording",this.state.recording).catch(console.log);
           }
 
           (!this.state.isRecording ? this.playRecording() : Promise.resolve()).then( () =>

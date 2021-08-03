@@ -8,7 +8,13 @@ enum CharType {
     NONALPHA
 }
 
-function MarkovScore(string: string) : number {
+// Accepts string or array of strings, calculates probability of this input being a human-readable string (using Markov chain approach)
+//  With an array, the score is a product of scores of all the array items (gets reduced by a constant coefficient to punish long selectors)
+function MarkovScore(input: (string|string[])) : number {
+    if(typeof input === "object"){
+        return (input as any[]).reduce((acc,x)=>acc*0.9*MarkovScore(x),1/0.9);
+    }
+
     const vowels = ['a','e','i','o','u','y'];
     const consonants = ['b','c','d','f','g','j','k','l','m','n','p','q','s','t','v','x','z','h','r','w'];
 
@@ -23,28 +29,29 @@ function MarkovScore(string: string) : number {
     }
 
     //DISCLAIMER - ALL the values have been eyeballed and are a result of an educated guess (mainly punishing long sequences of non-alphabetical symbols)
+    // The values are already normalized (sequence of alternating vowels and consonants gets score 2 - and most of the "human readable strings" get scores above 1).
     const transitions = [   
-        [0.45,0.50,0.05], //vowels
-        [0.50,0.45,0.05],  //consonants
-        [0.49,0.49,0.02] //non-alpha
+        [0.9,1,0.1], //vowels
+        [1,0.9,0.1],  //consonants
+        [0.98,0.98,0.04] //non-alpha
     ];
 
     let score = 1;
     let charType, nextCharType;
     
-    if(string.length === 0){
+    if(input.length === 0){
         return 0;
     }
 
-    string = string.toLowerCase();
-    charType = classifyChar(string[0]);
-    for(let i = 0; i < string.length-1; i++){
-        nextCharType = classifyChar(string[i+1]);
+    input = input.toLowerCase();
+    charType = classifyChar(input[0]);
+    for(let i = 0; i < input.length-1; i++){
+        nextCharType = classifyChar(input[i+1]);
         score *= transitions[charType][nextCharType];
         charType = nextCharType
     }
     
-    return score*Math.pow(2,string.length);
+    return score*2;
 }
 
 /* Calculates (Euclidean Distance)^2 between two vectors */
@@ -106,31 +113,64 @@ class SelectorGenerator{
             return "BODY";
         }
 
-        // Optional (but very useful) attributes, sorted by usefulness
-        const attributes = [
-            "id",   //in CSS, #id === [id=...] ???
-            "href",
-            "accesskey",
-            "title"
-        ]
-    
-        for(let attr of attributes){
-            if(element.getAttribute(attr) !== null){
-                return `[${attr}="${element.getAttribute(attr)}"]`;
+        let selector = (() => {
+            const shorten = (length:number) => {
+                return (string: string) => {
+                    return string.substring(0,length);
+                }
             }
-        }
+            // Optional (but very useful) attributes, sorted by usefulness
+            // "Condition" describes additional condition (other than sole existence of this attribute on the element), 
+            //    which needs to be satisfied in order to use this attribute.
+            // "Transform" should be a truncating function (using it, the selector equality changes to *=, targetting elements containing values as substrings).
+            const attributes : 
+                {
+                attr: string, 
+                condition?: (element: HTMLElement) => boolean,
+                transform?: (attr: string) => string
+                }[]= [
+                {attr:"id"},   //in CSS, #id === [id=...] ???
+                {attr:"accesskey"},
+                {attr:"href", transform: (url: string) : string => {
+                    // Removes potential long query/fragment strings (is it a good idea?)
+                    let match = url.match(/^(?<path>(.*?))(?<parameters>([\?\#].*))?$/);
 
-        if (element.className !== ""){
-            /* 
-                Otherwise we combine all element's classes and hope for the best (is this the best idea?)
-                Is it OK to assume that classes are more specific than html tags?
-            */
-            let classCombinedSelector = '.'+element.className.split(/\s+/).join('.');
-            if(this._isUniqueCss(classCombinedSelector)){   // unique in the whole document
-                return classCombinedSelector;
+                    if(match.groups.parameters && match.groups.parameters.length < 30){
+                        return url;
+                    }
+                    return match.groups.path;
+                }},
+                {attr:"title", transform: shorten(20)},
+                {attr: "alt", transform: shorten(20)}
+            ]
+        
+            for(let attr of attributes){
+                if(element.getAttribute(attr.attr) !== null){
+                    return attr.transform ? 
+                        `[${attr.attr}*="${attr.transform(element.getAttribute(attr.attr))}"]` : 
+                        `[${attr.attr}="${element.getAttribute(attr.attr)}"]`;
+                }
             }
-            else if(this._isUniqueCss(classCombinedSelector, element.parentNode)){  // at least unique among its siblings
-                return this.GetSelector(element.parentElement) + " > " + classCombinedSelector;
+
+            if (element.className !== ""){
+                /* 
+                    Otherwise we combine all element's classes and hope for the best (is this the best idea?)
+                    Is it OK to assume that classes are more specific than html tags?
+                */
+                if(MarkovScore(element.className.split(/\s+/)) > 1){
+                    return '.'+element.className.split(/\s+/).join('.');
+                }
+                console.log(`${element.className} did not pass the Markov test!`);
+            }
+            return null;
+        })();
+        
+        if(selector){
+            if(this._isUniqueCss(selector)){   // unique in the whole document
+                return selector;
+            }
+            else if(this._isUniqueCss(selector, element.parentNode)){  // at least unique among its siblings
+                return this.GetSelector(element.parentElement) + " > " + selector;
             }
         }
         

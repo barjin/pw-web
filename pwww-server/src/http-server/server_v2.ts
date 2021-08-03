@@ -90,6 +90,17 @@ class APIHandler {
         }
     }
 
+    private _updateRecording(req, res){
+        try{
+            let filename = req.body.name;
+            fs.writeFile(path.join(paths.savePath, filename), JSON.stringify(req.body.recording), ()=>res.json({ok:true}));
+        }
+        catch(e){
+            this._error(res,e);
+            console.error(e);
+        }
+    }
+
     routeAPIGetRequest = (req, res) => {
         console.log(`[REST] GET request at ${req.path}`)
 
@@ -116,6 +127,9 @@ class APIHandler {
                 break;
             case '/api/newRecording':
                 this._newRecording(req, res);        
+                break;
+            case '/api/updateRecording':
+                this._updateRecording(req, res);        
                 break;
             default:
                 this._error(res,"Invalid action!");      

@@ -25,6 +25,26 @@ class TabManager extends EventEmitter {
         this.emit("tabsUpdate", this.listAllTabs());
     }
 
+    private async _pageBootstrapper(page : Page) : Promise<void>{
+        page['tabName'] = "Loading...";
+
+        page.on('domcontentloaded', async () => {
+            page['tabName'] = await page.title();
+            this.notifyStateChange();
+        });
+
+        page.on('popup', async (popup: Page) => {
+            await this._pageBootstrapper(popup);
+        })
+
+        for(let injected of this._injections){
+            await page.addInitScript(injected);
+        }
+
+        //Reload is needed for the injected scripts to get loaded (will this break anything?)
+        await page.reload(); 
+    }
+
     public listAllTabs() : TabList{
         let currentTab : number = -1;
 
@@ -60,16 +80,7 @@ class TabManager extends EventEmitter {
 
         let currentContext = this._browser.contexts()[this._browser.contexts().length-1];
 		this.currentPage = await currentContext.newPage();
-        
-        this.currentPage['tabName'] = "Loading...";
-        this.currentPage.on('domcontentloaded', async () => {
-            this.currentPage['tabName'] = await this.currentPage.title();
-            this.notifyStateChange()
-        });
-
-        for(let injected of this._injections){
-            await this.currentPage.addInitScript(injected);
-        }
+        await this._pageBootstrapper(this.currentPage);
 
 		await this.currentPage.goto(typeof(url) === "string" ? url : homeURL);
 	}
