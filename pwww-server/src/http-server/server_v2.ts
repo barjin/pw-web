@@ -60,10 +60,21 @@ class APIHandler {
                 path.join(paths.savePath,filename)
             ).toString());
 
-            this._sendJSONData(res, {name: filename, recording: fileContent});
+            this._sendJSONData(res, {name: filename, actions: fileContent});
         }
         catch{
             this._error(res,"The requested file is not a valid JSON file");
+        }
+    }
+
+    private _postOKCallback(res){
+        return (error) => {
+            if(error){
+                this._error(res,error);
+            }
+            else{
+                res.json({ok:true});
+            }
         }
     }
 
@@ -71,7 +82,21 @@ class APIHandler {
         try{
             let filename = fs.readdirSync(paths.savePath)[req.body.id];
             if(fs.existsSync(path.join(paths.savePath, req.body.newName))) throw "Name already in use.";
-            fs.rename(path.join(paths.savePath,filename), path.join(paths.savePath  ,req.body.newName), ()=>{res.json({ok:true})});
+            fs.rename(
+                path.join(paths.savePath,filename), 
+                path.join(paths.savePath, req.body.newName), 
+                this._postOKCallback(res));
+        }
+        catch(e){
+            this._error(res,e);
+        }
+    }
+
+    private _deleteRecording(req, res){
+        try{
+            let filename = fs.readdirSync(paths.savePath)[req.body.id];
+            if(!fs.existsSync(path.join(paths.savePath, filename))) throw "This file does not exist.";
+            fs.unlink(path.join(paths.savePath,filename), this._postOKCallback(res));
         }
         catch(e){
             this._error(res,e);
@@ -83,7 +108,7 @@ class APIHandler {
             let filename = req.body.name;
             if(!fs.existsSync(paths.savePath)) fs.mkdirSync(paths.savePath);
             if(fs.existsSync(path.join(paths.savePath, filename))) throw "Name already in use.";
-            fs.writeFile(path.join(paths.savePath, filename), "[]", ()=>res.json({ok:true}));
+            fs.writeFile(path.join(paths.savePath, filename), "[]", this._postOKCallback(res));
         }
         catch(e){
             this._error(res,e);
@@ -93,7 +118,7 @@ class APIHandler {
     private _updateRecording(req, res){
         try{
             let filename = req.body.name;
-            fs.writeFile(path.join(paths.savePath, filename), JSON.stringify(req.body.recording), ()=>res.json({ok:true}));
+            fs.writeFile(path.join(paths.savePath, filename), JSON.stringify(req.body.recording), this._postOKCallback(res));
         }
         catch(e){
             this._error(res,e);
@@ -130,6 +155,9 @@ class APIHandler {
                 break;
             case '/api/updateRecording':
                 this._updateRecording(req, res);        
+                break;
+            case '/api/deleteRecording':
+                this._deleteRecording(req, res);
                 break;
             default:
                 this._error(res,"Invalid action!");      

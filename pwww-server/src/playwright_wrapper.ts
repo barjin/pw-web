@@ -90,7 +90,7 @@ class PlaywrightWrapper{
 					let url : string = task.data.url;
 
                     await this._currentPage.goto(url)
-						.catch( async () => 
+						.catch( async () => //FIX Promise rejection happens, if invalid URL is given... But what if there is another error?
 							{
 								url = "https://duckduckgo.com/?q=" + encodeURIComponent(url);
 								await this._currentPage.goto(url);
@@ -126,39 +126,6 @@ class PlaywrightWrapper{
 
 					return task;
                 },
-			// Following actions should not be recorded (are used for recording management).
-			// Therefore are they returning "EmptyRecord", a special value which gets ignored during capturing.
-			// 'playRecording':
-			// 	async (task) => {
-			// 		this._isRecording = false;
-					
-			// 		if(task.data.delay){
-			// 			this._playbackDelay = task.data.delay;
-			// 		}
-			// 		this._actionQueue = this._recording.map((x) => x.what);;
-			
-			// 		await this._tabManager.recycleContext();
-			// 		return types.EmptyRecord;
-			// 	},
-			// 'recording':
-			// 	async (task) => {
-					
-			// 		/* 
-			// 			Temporary, needs better solution! - when recording session starts, the browser resets itself.
-			// 			This way, we avoid the recording/playback initial state inconsistency.
-			// 		*/
-			// 		if(!this._isRecording && task.data.on){
-			// 			this._tabManager.recycleContext();
-			// 		}
-
-			// 		this._isRecording = task.data.on;
-
-			// 		if(!this._isRecording){
-			// 			this.saveRecording(task.data.name);
-			// 		}
-
-			// 		return types.EmptyRecord;
-			// 	},
 			'insertText': async (task) => {
 				await this._currentPage.keyboard.insertText(task.data.text);
 				return task;
@@ -182,11 +149,11 @@ class PlaywrightWrapper{
 
 				console.log("[PWWW] Executing " + task.type + "...");
 
-				let [actionWithContext, _] = await Promise.all(
+				let [actionWithContext, _, __] = await Promise.all(
 					[
 						//Runs task and delay timer simultaneously - if task takes a lot of time, its execution time gets deducted from the delay as well.
-						// !!! Needs better way of telling when the action is completed. !!!
 						actionList[task.type](task),
+						this._currentPage.waitForLoadState(),
 						this._playbackDelay ? new Promise(resolve => setTimeout(resolve,this._playbackDelay)) : null
 					])
 
@@ -204,19 +171,9 @@ class PlaywrightWrapper{
 		}
 	}
 
-	// public saveRecording(filename : string){
-	// 	if(!fs.existsSync(paths.savePath)) fs.mkdirSync(paths.savePath);
-
-	// 	fs.writeFileSync(path.join(paths.savePath,filename), JSON.stringify(this._recording));
-	// }
-
 	public enqueueTask = ( task: string ) : void => {
 		let parsedTask = JSON.parse(task);
-
-		// Enqueue task is invoked on incoming message, i.e. user action in streamed browser.
-		// To ensure "responsiveness", the broswer turns the delayed playback mode off.
-		// this._playbackDelay = null;
-
+		
 		this._actionQueue.push(parsedTask);
 		if(this._actionQueue.length === 1){
 			this.processTasks();

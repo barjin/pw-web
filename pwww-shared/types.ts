@@ -30,13 +30,15 @@ export type APIResponse<T> = {
     'data': T
 }
 
-export type BrowserState = {
-    tabState: {currentTab: number, tabs: string[]},
-    isRecording: boolean,
-    currentActionIdx: number,
-    recording: {
-        name: string,
-        recording: RecordedAction[]
+export type AppState = {
+    TabState: {currentTab: number, tabs: string[]},
+    RecordingState: {
+        isRecording: boolean,
+        currentActionIdx: number,
+        recording: {
+            name: string,
+            actions: RecordedAction[]
+        }
     }
 }
 

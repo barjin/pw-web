@@ -14,7 +14,7 @@ interface IRecordingsTableState {
 }
 
 class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
-    columns : String[] = ["Name", "Modified on"];
+    columns : String[] = ["Name", "", "Modified on"];
 
     constructor(props : IEmpty){
         super(props);
@@ -42,21 +42,21 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
     componentDidMount(){
         this.loadRecordings();
     }
+    
+    private _resolvePostResponse = (response: {ok: boolean, data?: object}) => {
+        if(response.ok){
+            this.loadRecordings();
+        }
+        else{
+            alert(response.data);
+        }
+    }
 
-    renameDialog(recordingId : number){
+    renameRecording = (recordingId : number) => {
         let newName = prompt("Enter new recording name...");
         if(newName !== null){
             postAPI("renameRecording", {id: recordingId, newName : newName})
-            .then(
-                response => {
-                    if(response.ok){
-                        this.loadRecordings();
-                    }
-                    else{
-                        alert(response.data);
-                    }
-                }
-            );
+            .then(this._resolvePostResponse);
         }
     }
 
@@ -64,20 +64,22 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
         let name = prompt("Enter new recording name...");
         if(name !== null){
             postAPI("newRecording",{name: name})
-            .then(
-                response => {
-                    if(response.ok){
-                        this.loadRecordings();
-                    }
-                    else{
-                        alert(response.data);
-                    }
-                }
-            );
+            .then(this._resolvePostResponse);
+        }
+    }
+
+    deleteRecording = (recordingId: number) => {
+        if(window.confirm("Do you really want to delete this recording?")){
+            postAPI("deleteRecording",{id: recordingId})
+            .then(this._resolvePostResponse);
         }
     }
 
     render(){
+        const recordingActions : object = {
+            "rename": this.renameRecording,
+            "delete": this.deleteRecording,
+        }
         return (
             <Table striped bordered hover>
             <thead>
@@ -96,7 +98,18 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
                 :
                 this.state.recordings.map(x => (
                 <tr key={x.id}>
-                    <td><a href={"/recording?id=" + x.id}>{x.name}</a> <a href="#" onClick={() => this.renameDialog(x.id)}>rename</a></td>
+                    <td>
+                        <a href={"/recording?id=" + x.id}>{x.name}</a> 
+                    </td>
+                    <td>
+                        <ul>
+                        {Object.entries(recordingActions).map(([key, value]) => 
+                            {
+                                return <li><a href="#" onClick={()=>value(x.id)}>{key}</a></li>
+                            }
+                        )}
+                        </ul>
+                    </td>
                     <td>{x.createdOn}</td>
                 </tr>
                 ))

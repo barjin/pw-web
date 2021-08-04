@@ -102,10 +102,10 @@ class SelectorGenerator{
         The recursive approach (parent - child chaining) may lead to ugly, long and implementation-specific selectors getting generated.
             Some heuristic might be possible (limiting the number of chained selectors?)
     */
-    GetSelector(element : HTMLElement) : string{
+    GetSelector(element : Node) : string{
         if(!(element instanceof HTMLElement)){
-            console.error(`Cannot generate selector for ${(element as any).constructor.name}`);
-            return "";
+            console.error(`Watch out! Cannot generate selector for ${(element as any).constructor.name}, trying parent...`);
+            return this.GetSelector(element.parentElement);
         }
 
         if(element.tagName === "BODY"){
@@ -141,7 +141,8 @@ class SelectorGenerator{
                     return match.groups.path;
                 }},
                 {attr:"title", transform: shorten(20)},
-                {attr: "alt", transform: shorten(20)}
+                {attr: "alt", transform: shorten(20)},
+                {attr: "name"}
             ]
         
             for(let attr of attributes){

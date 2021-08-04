@@ -12,7 +12,7 @@ import {useState} from "react";
 import * as types from 'pwww-shared/types'
 
 type ToolBarProps = {
-  tabState: types.BrowserState['tabState'],
+  tabState: types.AppState['TabState'],
   navigationCallback : (action : types.BrowserAction, data: object) => void
 }
 

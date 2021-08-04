@@ -1,9 +1,8 @@
 const EventEmitter = require('events');
 import type { Browser } from '../playwright/src/client/browser';
-
 import type { Page } from '../playwright/src/client/page';
 
-export type TabList = {currentTab: number, tabs: string[]};
+import * as types from 'pwww-shared/types';
 
 class TabManager extends EventEmitter {
     private _browser : Browser;
@@ -45,7 +44,7 @@ class TabManager extends EventEmitter {
         await page.reload(); 
     }
 
-    public listAllTabs() : TabList{
+    public listAllTabs() : any{
         let currentTab : number = -1;
 
         for(const [idx, page] of this._pages.entries()){
