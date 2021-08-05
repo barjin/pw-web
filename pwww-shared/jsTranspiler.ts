@@ -21,8 +21,8 @@ function escapeString(input: string) : string{
 
 class Transpiler {
     private headers : string[] = 
-    ["(async () => {\nconst {chromium} = require('playwright');\n",
-    "const browser = await chromium.launch({headless: false});\n", //for testing purposes
+    ["(async () => {\nconst {firefox} = require('playwright');\n",
+    "const browser = await firefox.launch({headless: false});\n", //for testing purposes
     "const page = await browser.newPage()\n",
     "await page.goto('https://wikipedia.org')\n\n"];
     

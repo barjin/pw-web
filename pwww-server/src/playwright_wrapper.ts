@@ -24,7 +24,9 @@ class PlaywrightWrapper{
 
 	constructor(messagingChannel : WSChannel, streamingChannel : WSChannel){
 		this._messagingChannel = messagingChannel;
-		messagingChannel.start(this.enqueueTask, () => {
+		messagingChannel.start(
+			(message: string) => this.enqueueTask(JSON.parse(message)),
+			() => {
 			if(this._browser){
 				this._browser.close();
 			}
@@ -39,15 +41,18 @@ class PlaywrightWrapper{
 	}
 	
 	private async _initialize() : Promise<void> {
+		console.log("Initializing...");
 		this._browser = await chromium.launch();
 		this._tabManager = await new TabManager(this._browser);
 
 		this._tabManager.on('tabsUpdate',(newState) => {
 			this._sendToClient(JSON.stringify(newState));
-		})
+		});
 
-		await this._tabManager.newTab();
 		await this._tabManager.injectToAll({path: './extractSelector.js'});
+
+		console.log("Opening new tab...");
+		await this._tabManager.newTab();
 	}
 
 	private _sendToClient = (...data) => {
@@ -171,10 +176,9 @@ class PlaywrightWrapper{
 		}
 	}
 
-	public enqueueTask = ( task: string ) : void => {
-		let parsedTask = JSON.parse(task);
-		
-		this._actionQueue.push(parsedTask);
+	public enqueueTask = ( task: types.Action ) : void => {
+	
+		this._actionQueue.push(task);
 		if(this._actionQueue.length === 1){
 			this.processTasks();
 		}

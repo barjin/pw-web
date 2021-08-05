@@ -74,14 +74,16 @@ class TabManager extends EventEmitter {
 
         if(this._browser.contexts().length === 0){
             // For freshly created (or recycled) browser without context
+            console.log("Creating new context...");
             await this._browser.newContext();
         }
 
+
         let currentContext = this._browser.contexts()[this._browser.contexts().length-1];
+
 		this.currentPage = await currentContext.newPage();
         await this._pageBootstrapper(this.currentPage);
-
-		await this.currentPage.goto(typeof(url) === "string" ? url : homeURL);
+		//await this.currentPage.goto(typeof(url) === "string" ? url : homeURL);
 	}
 
     public async closeTab(idx: number) : Promise<void>{

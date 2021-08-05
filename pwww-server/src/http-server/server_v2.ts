@@ -118,7 +118,7 @@ class APIHandler {
     private _updateRecording(req, res){
         try{
             let filename = req.body.name;
-            fs.writeFile(path.join(paths.savePath, filename), JSON.stringify(req.body.recording), this._postOKCallback(res));
+            fs.writeFile(path.join(paths.savePath, filename), JSON.stringify(req.body.actions), this._postOKCallback(res));
         }
         catch(e){
             this._error(res,e);
