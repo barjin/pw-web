@@ -26,7 +26,7 @@ jobs:
           sudo npm install yarn
           cd $GITHUB_WORKSPACE/
           sudo yarn install
-          
+
           cd $GITHUB_WORKSPACE/pwww-shared
           sudo tsc *.ts
 
@@ -37,7 +37,6 @@ jobs:
       - name: (React) Build React App
         run: |
           cd $GITHUB_WORKSPACE/pwww-web
-          ls ./node_modules/pwww-shared
           sudo npm run-script build
       
       - name: (React) Copy app and shared code to build folder
