@@ -182,10 +182,10 @@ class HTTPServer {
         app.post('/api*', this._apiHandler.routeAPIPostRequest);
 
         
-        app.use('/static/',express.static(path.join(__dirname, "..", paths.wwwPath, "static")));
+        app.use('/static/',express.static(path.join(paths.wwwPath, "static")));
         app.get(/^.*\/static\/(.*)$/, (req,res)=> res.redirect("/static/" + req.params[0]));
 
-        app.get(['/','/recording'], (_,res) => {res.sendFile(path.join(__dirname,"..",paths.wwwPath,"index.html"))});
+        app.get(['/','/recording'], (_,res) => {res.sendFile(path.join(paths.wwwPath,"index.html"))});
 
         app.listen(port, () => {
             console.log(`Example app listening at http://localhost:${port}`)

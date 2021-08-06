@@ -49,7 +49,7 @@ class PlaywrightWrapper{
 			this._sendToClient(JSON.stringify(newState));
 		});
 
-		await this._tabManager.injectToAll({path: './extractSelector.js'});
+		await this._tabManager.injectToAll({path: __dirname + '/extractSelector.js'});
 
 		console.log("Opening new tab...");
 		await this._tabManager.newTab();
