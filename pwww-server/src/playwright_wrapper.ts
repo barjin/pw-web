@@ -42,7 +42,7 @@ class PlaywrightWrapper{
 	
 	private async _initialize() : Promise<void> {
 		console.log("Initializing...");
-		this._browser = await chromium.launch();
+		this._browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ["--no-sandbox"] } : {});
 		this._tabManager = await new TabManager(this._browser);
 
 		this._tabManager.on('tabsUpdate',(newState) => {
@@ -85,7 +85,6 @@ class PlaywrightWrapper{
 
 						console.log(`Clicked on ${task.data.selector}`);
 					}
-
                     await this._currentPage.click(task.data.selector);
 					return task;
                 }),
