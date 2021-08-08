@@ -11,11 +11,11 @@ ENV CHROMIUM_PATH /usr/bin/chromium-browser
 
 RUN apk add --no-cache chromium 
 
-COPY "pwww-bundle.zip" "/root"
-# Unzip and install dependencies
-RUN cd \
-    && unzip "pwww-bundle.zip" \
-    && cd "src" \
-    && npm install .
+WORKDIR /root
 
-ENTRYPOINT ["node","/root/src/pwwwServer.js"]
+COPY "checkForUpdates.js" "."
+COPY "run.sh" "."
+
+RUN chmod +x ./run.sh
+
+ENTRYPOINT ["sh", "./run.sh"]
