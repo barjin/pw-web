@@ -4,10 +4,10 @@ An intuitive web interface for [Playwright](https://github.com/microsoft/playwri
 ## Downloads
 - "Official" releases under [Tags](https://github.com/barjin/pw-web/tags).
 - Latest commit builds as job artifacts under [Actions](https://github.com/barjin/pw-web/actions).
-- [Tampermonkey Selector Generator/Tester (deprecated, not updated anymore)](https://raw.githubusercontent.com/barjin/pw-web/development/backend/tools/tampermonkey/tm_script.user.js).
+- [Tampermonkey Selector Generator/Tester (deprecated, not updated anymore)](https://github.com/barjin/pw-web/raw/development/pwww-server/tools/tampermonkey/tm_script.user.js).
 
 ## How to run
-- The easiest way to run Pwww is to use the included Dockerfile, build it (in a folder containing pwww-bundle.zip as well) using `docker build -t barjin/pw-web .` and run it. By default, this Docker image exposes ports 8000 (HTTP), 8080 and 8081 (WebSockets) (needs to be addressed when running using `docker run -it -p 8080:8080 ...`).
+- The easiest way to run Pwww is to use the official Docker image, [`barjin/pw-web`](https://hub.docker.com/r/barjin/pw-web). By default, this Docker image exposes ports 8000 (HTTP/TCP), 8080 and 8081 (WebSockets/TCP) and those need to be mapped when starting the container using `docker run -d -p 8080:8080 ... barjin/pw-web`.
 
 ## Documentation
 All the documentation can be found on the corresponding [GitHub Page](https://barjin.github.io/pw-web/).
