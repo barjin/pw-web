@@ -54,7 +54,7 @@ async function main(){
       let latestArtifact = listing['artifacts'][0];
 
       fs.stat(path.join(__dirname, zipName), (error,stats) => {
-        if(error || new Date(stats.mtime) < new Date(latestArtifact)){
+        if(error || new Date(stats.mtime) < new Date(latestArtifact["updated_at"])){
           console.log(`Downloading the latest version of pwww (artifact id ${latestArtifact.id}).`);
 
           // nightly.link itself does not always serve the newest artifact, therefore checking through Github REST API
