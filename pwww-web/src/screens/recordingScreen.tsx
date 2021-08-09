@@ -248,6 +248,47 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     }
   }
 
+  recordingModifier = {
+    this: this,
+    deleteBlock: function (idx: number){
+        this.this.setState((prevState) => (
+          {...prevState,
+            RecordingState: {
+              ...prevState.RecordingState,
+              recording: { ...prevState.RecordingState.recording,
+                actions: prevState.RecordingState.recording.actions.filter((_,i) => i !== idx)
+              }
+            }
+          }
+        ),() => {
+          postAPI("updateRecording",this.this.state.RecordingState.recording).catch(console.log);
+        })
+    },
+    rearrangeBlocks: function (oldidx: number, newidx: number) {
+      if(oldidx === newidx){
+        return;
+      }
+      
+      let actions = [...this.this.state.RecordingState.recording.actions];
+      let action = actions[oldidx];
+      actions.splice(oldidx,1);
+      actions.splice(newidx,0,action);
+
+      this.this.setState((prevState) => (
+        {...prevState,
+          RecordingState: {
+            ...prevState.RecordingState,
+            recording: { ...prevState.RecordingState.recording,
+              actions: actions
+            }
+          }
+        }
+      ),() => {
+        postAPI("updateRecording",this.this.state.RecordingState.recording).catch(console.log);
+      })
+    }
+  };
+
   render(){
     return (
       this.state.loading ? <p>Loading...</p> : (
@@ -262,7 +303,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
           <Row style={{height:90+'vh'}}>
               <>
               <Col xs={3}>
-                <SideBar recordingState={this.state.RecordingState} control={this.recordingControl}/>
+                <SideBar recordingState={this.state.RecordingState} control={this.recordingControl} recordingModifier={this.recordingModifier}/>
               </Col>
               <Col xs={9}>
                 <Container fluid>

@@ -11,10 +11,14 @@ import {Transpiler} from 'pwww-shared/jsTranspiler';
 import {saveAs} from 'file-saver'
 
 import * as types from 'pwww-shared/types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 type SideBarProps = {
   control : (action: string) => void,
+  recordingModifier : {
+    deleteBlock : (idx: number) => void,
+    rearrangeBlocks : (oldidx: number, newidx: number) => void,
+  },
   recordingState: types.AppState["RecordingState"]
 }
 
@@ -38,24 +42,46 @@ function SideBar(props : SideBarProps) : JSX.Element {
         </Row>
         <Row>
           <Col id={"codeScroll"} style={{height: 75+"vh", overflowY:'scroll'}}>
-            <CodeList recordingState={props.recordingState} deleteBlock={props.control}/>
+            <CodeList recordingState={props.recordingState} recordingModifier={props.recordingModifier}/>
           </Col>
         </Row>
       </Container>
     );
 }
 
-function CodeList(props : { recordingState: SideBarProps['recordingState'], deleteBlock: Function }) : JSX.Element {
+function CodeList(props : { recordingState: SideBarProps['recordingState'], recordingModifier: SideBarProps["recordingModifier"] }) : JSX.Element {
   const showAttrs = ["selector", "url", "currentTab", "closing", "text"];
   const ref = useRef(null);
 
+  const [draggedID, setDraggedID] = useState(-1);
   useEffect(()=>(ref.current as any)?.scrollIntoView());
 
   return (
   <>{
   [...props.recordingState.recording.actions.map((action : types.RecordedAction, idx: number ) => (
     <Alert 
-      key={idx} 
+      draggable
+      key={idx}
+      id={idx.toString()}
+      className={"codeBlock"}
+
+      onDragStart={
+        (e) => {
+          setDraggedID(parseInt(e.currentTarget.id));
+        }
+      }
+
+      onDragOver={
+        (e) => {
+          e.preventDefault();
+        }
+      }
+
+      onDrop = {
+        (e) => {
+          props.recordingModifier.rearrangeBlocks(draggedID, parseInt((e.currentTarget.id) as any));
+        }
+      }
       ref={props.recordingState.currentActionIdx === idx ? ref : null} //for scrolling
       variant= {props.recordingState.currentActionIdx === idx ? "primary" : "secondary"} //for color
     >
@@ -63,7 +89,7 @@ function CodeList(props : { recordingState: SideBarProps['recordingState'], dele
       <Alert.Heading>{action.what.type}</Alert.Heading>
         <Button onClick={() => {
           window.confirm("Removing an action can lead to inconsistent recording. Do you want to proceed?");
-          props.deleteBlock(idx);
+          props.recordingModifier.deleteBlock(idx);
         }} variant="outline-danger">❌</Button>
       </div>
       <hr></hr>
