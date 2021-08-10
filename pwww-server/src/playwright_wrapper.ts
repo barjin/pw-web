@@ -15,8 +15,7 @@ class PlaywrightWrapper{
 	private _browser : Browser = null;
 	private _tabManager : TabManager;
 
-	private _actionQueue : types.Action[] = [];
-
+	private _messageQueue : types.WSMessage<types.Action>[] = [];
 	private _playbackDelay : number = 1000;
 
 	private _messagingChannel : WSChannel;
@@ -73,8 +72,22 @@ class PlaywrightWrapper{
 		}
 	}
 
+	private _signalError(message : types.WSMessage<any>) : void{
+		this._sendToClient(JSON.stringify({
+			responseID: message.messageID,
+			error: true,
+			payload: message.payload
+		}));
+	}
+
+	private _signalCompletion(message : types.WSMessage<any>) : void{
+		this._sendToClient(JSON.stringify({
+			responseID: message.messageID,
+			payload: message.payload}));
+	}
+
 	private async processTasks() : Promise<void>{
-		const actionList : {[key in keyof typeof types.BrowserAction] : ((task: types.Action) => Promise<{type: types.BrowserAction, data: object}>) } = {
+		const actionList : {[key in keyof typeof types.BrowserAction] : ((task: types.Action) => Promise<types.Action>) } = {
 			'click' : 
                 (async (task) => {
 					if(!task.data.selector){
@@ -85,7 +98,7 @@ class PlaywrightWrapper{
 
 						console.log(`Clicked on ${task.data.selector}`);
 					}
-                    await this._currentPage.click(task.data.selector);
+                    await this._currentPage.click(task.data.selector,{timeout: 5000});
 					return task;
                 }),
 
@@ -94,7 +107,7 @@ class PlaywrightWrapper{
 					let url : string = task.data.url;
 
                     await this._currentPage.goto(url)
-						.catch( async () => //FIX Promise rejection happens, if invalid URL is given... But what if there is another error?
+						.catch( async () => //FIX Promise rejection happens, if invalid URL is given... But what if there is another type of error?
 							{
 								url = "https://duckduckgo.com/?q=" + encodeURIComponent(url);
 								await this._currentPage.goto(url);
@@ -136,49 +149,49 @@ class PlaywrightWrapper{
 			},
 			'reset': async () => {
 				await this._tabManager.recycleContext();
-				return types.EmptyRecord;
+				return types.EmptyAction;
 			},
-			'recording': async () => (types.EmptyRecord),
-			'playRecording': async () => (types.EmptyRecord),
-			'noop': async () => (types.EmptyRecord)
+			'recording': async () => (types.EmptyAction),
+			'playRecording': async () => (types.EmptyAction),
+			'noop': async () => (types.EmptyAction)
         };
 
 		if(this._browser === null || !this._browser.isConnected()){
 			await this._initialize();
 		}
 
-		while(this._actionQueue.length !== 0){
-			let task = this._actionQueue.shift();
-			if(task.type in actionList){
+		while(this._messageQueue.length !== 0){
+			let task = this._messageQueue.shift();
 
-				console.log("[PWWW] Executing " + task.type + "...");
+			// Validate payload type here????
 
-				let [actionWithContext, _, __] = await Promise.all(
+			if(!(task.payload.type in actionList)){
+				console.error("[PWWW] Invalid task type! " + JSON.stringify(task));
+			}
+			else {
+				console.log("[PWWW] Executing " + task.payload.type + "...");
+
+				Promise.all(
 					[
 						//Runs task and delay timer simultaneously - if task takes a lot of time, its execution time gets deducted from the delay as well.
-						actionList[task.type](task),
-						this._currentPage.waitForLoadState(),
+						// Slows the playback down, giving user some time to understarnd the playback flow.
+						actionList[task.payload.type](task.payload),
 						this._playbackDelay ? new Promise(resolve => setTimeout(resolve,this._playbackDelay)) : null
 					])
+					.then(async ([actionWithContext]) => {
+						await this._currentPage.waitForLoadState(),
 
-				this._sendToClient(JSON.stringify({
-				responseID: task.id,
-				currentAction:{
-					where: {},
-					what: actionWithContext
-				}}));
-				this.sendScreenshot(); // is this the correct time to send screenshots? (after every single action?)
-			}
-			else{
-				console.error("[PWWW] Invalid task type! " + JSON.stringify(task));
+						this._signalCompletion(task);
+						this.sendScreenshot(); // is this the correct time to send screenshots? (after every single action?)
+					})
+					.catch(() => this._signalError(task));
 			}
 		}
 	}
 
-	public enqueueTask = ( task: types.Action ) : void => {
-	
-		this._actionQueue.push(task);
-		if(this._actionQueue.length === 1){
+	public enqueueTask = ( task: types.WSMessage<types.Action> ) : void => {
+		this._messageQueue.push(task);
+		if(this._messageQueue.length === 1){
 			this.processTasks();
 		}
 	}

@@ -1,7 +1,7 @@
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import {Component, createRef, RefObject} from 'react';
+import {Component, createRef} from 'react';
 
 import ToolBar from '../components/toolbar';
 import SideBar from '../components/side_bar';
@@ -71,7 +71,7 @@ interface IRecScreenProps {
 
 interface IRecScreenState {
   loading: boolean,
-  ok: boolean
+  ok: boolean,
   RecordingState: types.AppState["RecordingState"],
   TabState: types.AppState["TabState"]
 }
@@ -96,6 +96,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
       },
       RecordingState:{
         isRecording: false,
+        playbackError: false,
         currentActionIdx: -1,
         recording: {name: "", actions: []},
       }
@@ -160,7 +161,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
 
   requestAction = (actionType: types.BrowserAction, data: object) => {
     this._messageChannel?.request({type: types.BrowserAction[actionType], data: data})
-    .then(newAction => {
+    .then(responseMessage => {
       if(this.state.RecordingState.isRecording){
         this.setState(prevState => (
           {RecordingState: {
@@ -169,30 +170,42 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
               {
                 ...prevState.RecordingState.recording,
                 actions: [...prevState.RecordingState.recording.actions, 
-                  (newAction as {currentAction: types.RecordedAction}).currentAction]
+                  (responseMessage as any).payload]
               }
             }
           }
         ));
       };
-    });
+    })
+    // does not catch just yet ;
   }
 
   playRecording = () : Promise<void> => {
     if(this.state.RecordingState.recording.actions){ //!== []
-      /* Sends all actions to server, waits for ACK after every sent action. */
+      /* Sends all actions to server, waits for ACK (promise resolve) after every sent action. */
       return [{idx: -1, type: 'reset',data: {}},
-        ...this.state.RecordingState.recording.actions.map((x, idx) => ({idx: idx, type: (x.what.type), data: x.what.data}))
+        ...this.state.RecordingState.recording.actions.map((x, idx) => ({idx: idx, type: (x.type), data: x.data}))
       ].reduce((p : Promise<any>, action) => {
           return p.then(() => {
             this.setState(prevState => (
               {
                 RecordingState: {
                 ...prevState.RecordingState,
+                playbackError: false,
                 currentActionIdx: action.idx
               }}
             ));
             return this._messageChannel?.request(action);
+          }).catch(() => {
+            console.error(`Action no. ${action.idx} failed :(`);
+            this.setState(prevState => (
+              {
+                RecordingState: {
+                ...prevState.RecordingState,
+                playbackError: true,
+              }}
+            ));
+            return Promise.reject();
           });
         }, Promise.resolve())
         .then(() =>
@@ -218,7 +231,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     switch (action) {
       case 'play':
           if(window.confirm("Starting the playback closes all open tabs. Do you want to proceed?")){
-            this.playRecording();
+            this.playRecording().catch(() => {});
           }
         break;
       case 'record':
@@ -241,7 +254,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
               ...prevState.RecordingState,
               isRecording: !prevState.RecordingState.isRecording
             }}))
-          );
+          ).catch(() => {}); //if playback fails, recording does not start.
           break;
       default:
         break;

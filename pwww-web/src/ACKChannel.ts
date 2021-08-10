@@ -3,7 +3,7 @@ class ACKChannel {
     private _messageID : number = 0;
     private _pendingActions : 
       {
-       id: number, 
+       messageID: number, 
        resolve: (response: object) => void, 
        reject: (reason: any) => void
       }[] = [];
@@ -19,8 +19,8 @@ class ACKChannel {
   
     request = (data: object) : Promise<object> => {
         return new Promise((resolve,reject) => {
-          this._pendingActions.push({id: this._messageID, resolve: resolve, reject: reject});
-          this.send({id: this._messageID, ...data});
+          this._pendingActions.push({messageID: this._messageID, resolve: resolve, reject: reject});
+          this.send({messageID: this._messageID, payload: data});
           this._messageID++;
           console.log(JSON.stringify(this._pendingActions));
         });
@@ -34,16 +34,20 @@ class ACKChannel {
       let obj = JSON.parse(message.data);
       if("responseID" in obj){
         console.log(obj);
-        // If there is id property in the received object, it should correspond to one of the sent (now pending) messages
+        // If there is id property in the received object, it should correspond to one of the sent (now pending) messages (this invariant should be respected by both sides - no responseID without intital messageID (request)!)
         // When should be the request rejected? (timeout/errors?)
         for(let i = 0; i < this._pendingActions.length; i++){
-          if(this._pendingActions[i].id === obj.responseID){
-            this._pendingActions[i].resolve(obj);
+          if(this._pendingActions[i].messageID === obj.responseID){
+            if("error" in obj){
+              this._pendingActions[i].reject(obj);
+            }
+            else{
+              this._pendingActions[i].resolve(obj);
+            }
             this._pendingActions.splice(i,1);
             break;
           }
         }
-        // this._pendingActions = this._pendingActions.filter((x) => (x.id !== obj.responseID));
       }
       else{
         // In this case, this message is not a response to anything and gets processed using the "broadcast" callback.

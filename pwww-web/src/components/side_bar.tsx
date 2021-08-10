@@ -58,7 +58,7 @@ function CodeList(props : { recordingState: SideBarProps['recordingState'], reco
 
   return (
   <>{
-  [...props.recordingState.recording.actions.map((action : types.RecordedAction, idx: number ) => (
+  [...props.recordingState.recording.actions.map((action : types.Action, idx: number ) => (
     <Alert 
       draggable
       key={idx}
@@ -83,10 +83,10 @@ function CodeList(props : { recordingState: SideBarProps['recordingState'], reco
         }
       }
       ref={props.recordingState.currentActionIdx === idx ? ref : null} //for scrolling
-      variant= {props.recordingState.currentActionIdx === idx ? "primary" : "secondary"} //for color
+      variant= {props.recordingState.currentActionIdx === idx ? (props.recordingState.playbackError ? "danger" : "primary") : "secondary"} //for color
     >
       <div className="d-flex justify-content-between">
-      <Alert.Heading>{action.what.type}</Alert.Heading>
+      <Alert.Heading>{action.type}</Alert.Heading>
         <Button onClick={() => {
           window.confirm("Removing an action can lead to inconsistent recording. Do you want to proceed?");
           props.recordingModifier.deleteBlock(idx);
@@ -94,7 +94,7 @@ function CodeList(props : { recordingState: SideBarProps['recordingState'], reco
       </div>
       <hr></hr>
       {
-        showAttrs.filter((x) => action.what.data[x]).map(attr => `${action.what.data[attr]}`)
+        showAttrs.filter((x) => action.data[x]).map(attr => `${action.data[attr]}`)
       }
     </Alert>
   )),

@@ -10,22 +10,13 @@ function escapeString(input: string) : string{
     return input.replace(/\"/g, "\\\"");
 }
 
-// let filename : string = process.argv[2]; //yargs?
-// const recording : types.BrowserState["recording"]["recording"] = JSON.parse(fs.readFileSync(filename).toString());
-
-// //does it exist? etc etc, this is dangerous
-// let translatedFile = fs.createWriteStream(`${filename}.tr.js`, {
-//     flags: 'a' // 'a' means appending (old data will be preserved)
-// });
-  
-
 class Transpiler {
     private headers : string[] = 
     ["(async () => {\nconst {firefox} = require('playwright');\n",
     "const browser = await firefox.launch({headless: false});\n", //for testing purposes
     "const page = await browser.newPage()\n\n"];
     
-    public translate(recording: types.RecordedAction[]) : Blob{
+    public translate(recording: types.Action[]) : Blob{
         const actions = {
             'click' : (data: any) => `await page.click("${escapeString(data.selector)}");`,
             'browse': (data: any) => `await page.goto("${escapeString(data.url)}");`,
@@ -36,8 +27,8 @@ class Transpiler {
         let translationBuffer = [...this.headers];
         
         for(let action of recording){
-            if(action.what.type in actions){
-                translationBuffer.push(`${(actions as any)[action.what.type](action.what.data)}\n`);
+            if(action.type in actions){
+                translationBuffer.push(`${(actions as any)[action.type](action.data)}\n`);
                 translationBuffer.push("await page.waitForLoadState();\n\n");
             }
         }

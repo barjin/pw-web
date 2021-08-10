@@ -15,14 +15,18 @@ export enum BrowserAction {
 }
 
 export type Action = {
-    'id': number,
     'type' : BrowserAction,
     'data' : any
 }
 
 export type RecordedAction = {
-    'where' : object,
+    'id': number,
     'what' : Action
+}
+
+export type WSMessage<T> = {
+    'messageID': number,
+    'payload': T
 }
 
 export type APIResponse<T> = {
@@ -34,12 +38,13 @@ export type AppState = {
     TabState: {currentTab: number, tabs: string[]},
     RecordingState: {
         isRecording: boolean,
+        playbackError: boolean
         currentActionIdx: number,
         recording: {
             name: string,
-            actions: RecordedAction[]
+            actions: Action[]
         }
     }
 }
 
-export const EmptyRecord = {type: BrowserAction.noop, data: {}};
+export const EmptyAction = {type: BrowserAction.noop, data: {}};
