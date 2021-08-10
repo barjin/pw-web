@@ -1,0 +1,52 @@
+name: PwwwBuild v2
+
+on:
+  push:
+    branches: [ development ]
+  workflow_dispatch:
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Install node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: (Server) Install dependencies and build project
+        run : |
+          sudo npm install yarn
+          cd $GITHUB_WORKSPACE/
+          sudo yarn install
+
+          cd $GITHUB_WORKSPACE/pwww-shared
+          sudo tsc *.ts
+
+          cd $GITHUB_WORKSPACE/pwww-server/tools
+          sudo chmod +x ./build.sh
+          sudo ./build.sh
+      
+      - name: (React) Build React App
+        run: |
+          cd $GITHUB_WORKSPACE/pwww-web
+          sudo npm run-script build
+      
+      - name: (React) Copy app and shared code to build folder
+        run: |
+          sudo mv $GITHUB_WORKSPACE/pwww-web/build/ $GITHUB_WORKSPACE/pwww-server/build/www
+          sudo cp -r $GITHUB_WORKSPACE/pwww-shared/ $GITHUB_WORKSPACE/pwww-server/build/pwww-shared
+          sudo rm $GITHUB_WORKSPACE/pwww-server/build/pwww-shared/*.ts
+
+      - name: Upload built app as a job artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: pwww-bundle
+          path: |
+            ${{github.workspace}}/pwww-server/build
