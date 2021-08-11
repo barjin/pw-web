@@ -3,6 +3,7 @@ export enum BrowserAction {
     'browse',
     'insertText',
     'navigate',
+    'read',
 
     'openTab',
     'switchTabs',

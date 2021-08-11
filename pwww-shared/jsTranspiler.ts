@@ -21,7 +21,12 @@ class Transpiler {
             'click' : (data: any) => `await page.click("${escapeString(data.selector)}");`,
             'browse': (data: any) => `await page.goto("${escapeString(data.url)}");`,
             'navigate': (data: any) => `await page.${data.back ? "goBack();" : "goForward();"}`,
-            'insertText': (data: any) => `await page.keyboard.insertText("${data.text}");`
+            'insertText': (data: any) => `await page.keyboard.insertText("${data.text}");`,
+            'read' : (data : any) => `
+const elementHandle = await page.$("${escapeString(data.selector)}");
+var text = await elementHandle.textContent();
+process.stdout.write(text + "\\n");
+            `
         }
 
         let translationBuffer = [...this.headers];
@@ -29,7 +34,7 @@ class Transpiler {
         for(let action of recording){
             if(action.type in actions){
                 translationBuffer.push(`${(actions as any)[action.type](action.data)}\n`);
-                translationBuffer.push("await page.waitForLoadState();\n\n");
+                translationBuffer.push("await page.waitForLoadState('networkidle');\n\n");
             }
         }
         translationBuffer.push("})();")

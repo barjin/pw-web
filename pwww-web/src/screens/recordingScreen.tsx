@@ -26,21 +26,36 @@ class StreamWindow extends Component<any, any> {
     this.actionSender = props.actionSender;
   }
 
+  private getClickPos = (ev : MouseEvent) => {
+    if(this._canvas.current){
+      let canvasPos = this._canvas.current.getBoundingClientRect();
+      return {
+        x: Math.floor((1280/canvasPos.width)*(ev.clientX - canvasPos.left)), 
+        y: Math.floor((720/canvasPos.height)*(ev.clientY - canvasPos.top))
+      };
+    }
+    else{
+      return {x: 0, y: 0}
+    }
+  }
+
   componentDidMount = () => {
 
     if(this._canvas.current){
       this._canvas.current.addEventListener('click', (ev) => {
         if(this._canvas.current){
-          let canvasPos = this._canvas.current.getBoundingClientRect();
-          let click = {
-            x: (1280/canvasPos.width)*(ev.clientX - canvasPos.left), 
-            y: (720/canvasPos.height)*(ev.clientY - canvasPos.top)
-          };
-          this.actionSender(types.BrowserAction.click, click);
+          this.actionSender(types.BrowserAction.click, this.getClickPos(ev));
         }
       });
+
+      this._canvas.current.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault();
+        this.actionSender(types.BrowserAction.read, this.getClickPos(ev));
+      })
     }
   }
+
+  
   drawToCanvas = (image: Blob) => {
     if(this._canvas.current){
       let ctx = this._canvas.current.getContext('2d');
@@ -114,7 +129,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     this._streamChannel = new WebSocket('ws://localhost:8081');
 
     this._messageChannel.addEventListener('open', () => {
-      this._messageChannel?.send({type: 'noop', data: {}}); // Starts/Wakes up the streamed browser
+      this._messageChannel?.send({messageID: null, payload: {type: 'noop', data: {}}}); // Starts/Wakes up the streamed browser (uses no-response .send() instead of .request())
     });
 
     this._streamChannel.addEventListener('message', event => {

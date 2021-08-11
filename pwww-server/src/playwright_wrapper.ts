@@ -104,16 +104,18 @@ class PlaywrightWrapper{
 
 			'browse' : 
                 (async (task) => {
-					let url : string = task.data.url;
-
-                    await this._currentPage.goto(url)
-						.catch( async () => //FIX Promise rejection happens, if invalid URL is given... But what if there is another type of error?
+					let url = await this._currentPage.goto(task.data.url)
+						.then(() => task.data.url)
+						.catch( async () => //FIX THIS! Promise rejection happens if invalid URL is given... But what if there is another type of error? Can cause infinite duckduckgo request loop!
 							{
-								url = "https://duckduckgo.com/?q=" + encodeURIComponent(url);
-								await this._currentPage.goto(url);
+								let queryURL = "https://duckduckgo.com/?q=" + encodeURIComponent(task.data.url);
+								console.log(queryURL);
+								await this._currentPage.goto(queryURL);
+								return queryURL;
 							});
 
-					return { ...task, data: {url: url} };
+					task.data.url = url;
+					return task;
                 }),
 
 			'navigate':
@@ -145,6 +147,19 @@ class PlaywrightWrapper{
                 },
 			'insertText': async (task) => {
 				await this._currentPage.keyboard.insertText(task.data.text);
+				return task;
+			},
+			'read': async (task) => {
+				if(!task.data.selector){
+					task.data.selector = await this._currentPage.evaluate(([click]) => {
+						const generator = new window["SelectorGenerator"]();
+						return generator.GetSelector(document.elementFromPoint(click.x, click.y));
+					},[task.data]);
+				}
+
+				const elementHandle = await this._currentPage.$(task.data.selector);
+				task.data.text = await elementHandle.textContent();
+
 				return task;
 			},
 			'reset': async () => {

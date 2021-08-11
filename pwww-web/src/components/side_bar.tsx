@@ -86,7 +86,7 @@ function CodeList(props : { recordingState: SideBarProps['recordingState'], reco
       variant= {props.recordingState.currentActionIdx === idx ? (props.recordingState.playbackError ? "danger" : "primary") : "secondary"} //for color
     >
       <div className="d-flex justify-content-between">
-      <Alert.Heading>{action.type}</Alert.Heading>
+      <Alert.Heading>{action.type} {!props.recordingState.playbackError && props.recordingState.currentActionIdx === idx ? <Spinner as="span" size="sm" animation="border"/> : null}</Alert.Heading>
         <Button onClick={() => {
           window.confirm("Removing an action can lead to inconsistent recording. Do you want to proceed?");
           props.recordingModifier.deleteBlock(idx);
