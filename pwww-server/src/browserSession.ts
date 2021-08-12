@@ -6,33 +6,30 @@ import type { Browser } from '../playwright/src/client/browser';
 import * as types from 'pwww-shared/types';
 
 import TabManager from './tabManager';
-import WSChannel from './wsChannel';
+import ws from 'ws';
+
+// import WSChannel from './wsChannel';
 
 const fs = require('fs');
 const path = require('path');
 
-class PlaywrightWrapper{
+class BrowserSession {
 	private _browser : Browser = null;
 	private _tabManager : TabManager;
 
 	private _messageQueue : types.WSMessage<types.Action>[] = [];
 	private _playbackDelay : number = 1000;
 
-	private _messagingChannel : WSChannel;
-	private _streamingChannel : WSChannel;
+	private _messagingChannel : ws;
+	private _streamingChannel : ws;
 
-	constructor(messagingChannel : WSChannel, streamingChannel : WSChannel){
+	constructor(messagingChannel : ws, streamingChannel : ws){
 		this._messagingChannel = messagingChannel;
-		messagingChannel.start(
-			(message: string) => this.enqueueTask(JSON.parse(message)),
-			() => {
-			if(this._browser){
-				this._browser.close();
-			}
-		});
-
 		this._streamingChannel = streamingChannel;
-		streamingChannel.start((..._) => {}, (..._) => {});
+
+		streamingChannel.send("test");
+		messagingChannel.on('message', (message: string) => this.enqueueTask(JSON.parse(message)));
+		// on close?		
 	}
 
 	private get _currentPage() : Page {
@@ -62,9 +59,8 @@ class PlaywrightWrapper{
 
 	private async sendScreenshot(options? : any) : Promise<void>{
 		if(this._browser !== null && this._browser.isConnected()){
-
 			this._currentPage.screenshot({'type': 'jpeg', ...options})
-				.then(this._streamingChannel.send)
+				.then((buffer: Buffer) => this._streamingChannel.send(buffer))
 				.catch(console.error);
 		}
 		else{
@@ -75,8 +71,7 @@ class PlaywrightWrapper{
 	private _signalError(message : types.WSMessage<any>) : void{
 		this._sendToClient(JSON.stringify({
 			responseID: message.messageID,
-			error: true,
-			payload: message.payload
+			error: true
 		}));
 	}
 
@@ -212,4 +207,4 @@ class PlaywrightWrapper{
 	}
 }
 
-export default PlaywrightWrapper;
+export default BrowserSession;
