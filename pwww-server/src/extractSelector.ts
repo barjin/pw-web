@@ -87,6 +87,9 @@ function EuclideanDistanceSq(vecA: number[], vecB: number[]) : number{
 // }
 
 class SelectorGenerator{
+    constructor(){
+    }
+
     private _isUniqueCss(selector : string, root : ParentNode = document) : boolean{
         if(root === document){
             return root.querySelectorAll(selector).length === 1;
@@ -97,17 +100,59 @@ class SelectorGenerator{
                 .length === 1;
     }
 
+    grabElementFromPoint(x: number, y: number) : Element {
+        return document.elementFromPoint(x,y) || (() => {
+            window.scrollTo(x,y);
+            x -= window.pageXOffset;
+            y -= window.pageYOffset;
+            return document.elementFromPoint(x,y);
+        })();
+        
+    }
+
+    getNodeInfo(element: Node) : {tagName: string, semanticalSelector: string, structuralSelector: string}{
+        if(!(element instanceof HTMLElement)){
+            console.error(`Watch out! Cannot generate selector for ${(element as any).constructor.name}, trying parent...`);
+            return this.getNodeInfo(element.parentElement);
+        }
+
+        return {
+            tagName: (element as Element).tagName,
+            semanticalSelector: this.GetSelectorSemantic(element as HTMLElement),
+            structuralSelector: this.GetSelectorStructural(element)
+        }
+        
+    }
+
+    private GetSelectorStructural(element : Element){
+        // Base conditions for the recursive approach.
+        if(element.tagName === "BODY"){
+            return "BODY";
+        }
+        else if(element.id){
+            return `#${element.id}`;
+        }
+
+        let selector = element.tagName;
+        if(!this._isUniqueCss(selector, element.parentNode)){  // if selector is not unique among siblings, we count its position (ugly, but simple)
+            let idx = 1;
+            for(let child of element.parentElement.children){
+                if(child == element){
+                    selector += `:nth-child(${idx})`;
+                    break;
+                }
+                idx++;
+            }
+        }
+        return this.GetSelectorStructural(element.parentElement) + " > " + selector;
+    }
+
     /*
         Tries to recursively find the best fitting selector for the given element.
         The recursive approach (parent - child chaining) may lead to ugly, long and implementation-specific selectors getting generated.
             Some heuristic might be possible (limiting the number of chained selectors?)
     */
-    GetSelector(element : Node) : string{
-        if(!(element instanceof HTMLElement)){
-            console.error(`Watch out! Cannot generate selector for ${(element as any).constructor.name}, trying parent...`);
-            return this.GetSelector(element.parentElement);
-        }
-
+    private GetSelectorSemantic(element : HTMLElement) : string{
         if(element.tagName === "BODY"){
             // Base condition for the recursive approach.
             return "BODY";
@@ -171,7 +216,7 @@ class SelectorGenerator{
                 return selector;
             }
             else if(this._isUniqueCss(selector, element.parentNode)){  // at least unique among its siblings
-                return this.GetSelector(element.parentElement) + " > " + selector;
+                return this.GetSelectorSemantic(element.parentElement) + " > " + selector;
             }
         }
         

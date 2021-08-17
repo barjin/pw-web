@@ -7,7 +7,7 @@ import Row from 'react-bootstrap/Row';
 import Spinner from 'react-bootstrap/Spinner';
 
 import {useRef} from 'react';
-import {Transpiler} from 'pwww-shared/jsTranspiler';
+import {ApifyTranspiler, Transpiler} from 'pwww-shared/jsTranspiler';
 import {saveAs} from 'file-saver'
 
 import * as types from 'pwww-shared/types';
@@ -24,7 +24,7 @@ type SideBarProps = {
 
 function SideBar(props : SideBarProps) : JSX.Element {
     const downloadRecording = () => {
-      let transp = new Transpiler();
+      let transp = new ApifyTranspiler();
       saveAs(transp.translate(props.recordingState.recording.actions), `${props.recordingState.recording.name}.js`);
     }
 
@@ -36,8 +36,7 @@ function SideBar(props : SideBarProps) : JSX.Element {
             <Button key={1} onClick={() => props.control('record')} variant={props.recordingState.isRecording ? "dark" : "light"}>
               {!props.recordingState.isRecording ? "Start recording" : "Stop recording"}
             </Button>
-            <Button key={2} variant="light">Settings</Button> 
-            <Button key={3} onClick={downloadRecording} variant="light">Download</Button>
+            <Button key={2} onClick={downloadRecording} variant="light">Download</Button>
           </Col>
         </Row>
         <Row>
@@ -82,8 +81,8 @@ function CodeList(props : { recordingState: SideBarProps['recordingState'], reco
           props.recordingModifier.rearrangeBlocks(draggedID, parseInt((e.currentTarget.id) as any));
         }
       }
-      ref={props.recordingState.currentActionIdx === idx ? ref : null} //for scrolling
-      variant= {props.recordingState.currentActionIdx === idx ? (props.recordingState.playbackError ? "danger" : "primary") : "secondary"} //for color
+      ref={props.recordingState.currentActionIdx === idx ? ref : null} //for auto scrolling
+      variant= {props.recordingState.currentActionIdx === idx ? (props.recordingState.playbackError ? "danger" : "primary") : "secondary"} //for active color
     >
       <div className="d-flex justify-content-between">
       <Alert.Heading>{action.type} {!props.recordingState.playbackError && props.recordingState.currentActionIdx === idx ? <Spinner as="span" size="sm" animation="border"/> : null}</Alert.Heading>

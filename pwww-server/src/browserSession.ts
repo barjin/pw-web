@@ -8,8 +8,6 @@ import * as types from 'pwww-shared/types';
 import TabManager from './tabManager';
 import ws from 'ws';
 
-// import WSChannel from './wsChannel';
-
 const fs = require('fs');
 const path = require('path');
 
@@ -27,7 +25,6 @@ class BrowserSession {
 		this._messagingChannel = messagingChannel;
 		this._streamingChannel = streamingChannel;
 
-		streamingChannel.send("test");
 		messagingChannel.on('message', (message: string) => this.enqueueTask(JSON.parse(message)));
 		// on close?		
 	}
@@ -68,10 +65,11 @@ class BrowserSession {
 		}
 	}
 
-	private _signalError(message : types.WSMessage<any>) : void{
+	private _signalError(message : types.WSMessage<any>, errorMessage: string) : void{
 		this._sendToClient(JSON.stringify({
 			responseID: message.messageID,
-			error: true
+			error: true,
+			errorMessage: errorMessage
 		}));
 	}
 
@@ -86,15 +84,24 @@ class BrowserSession {
 			'click' : 
                 (async (task) => {
 					if(!task.data.selector){
-						task.data.selector = await this._currentPage.evaluate(([click]) => {
-							const generator = new window["SelectorGenerator"]();
-							return generator.GetSelector(document.elementFromPoint(click.x, click.y));
-						},[task.data]);
-
+						try{
+							task.data.selector = (await this._currentPage.evaluate(([click]) => {
+								const generator = new window["SelectorGenerator"]();
+								return generator.getNodeInfo(generator.grabElementFromPoint(click.x, click.y));
+							},[task.data])).semanticalSelector;
+						}
+						catch(e){
+							console.error(e);
+						}
 						console.log(`Clicked on ${task.data.selector}`);
 					}
-                    await this._currentPage.click(task.data.selector,{timeout: 5000});
-					return task;
+					if(task.data.selector){
+						await this._currentPage.click(task.data.selector,{timeout: 5000});
+						return task;
+					}
+                    else{
+						throw "Selector could not be generated!";
+					}
                 }),
 
 			'browse' : 
@@ -130,7 +137,6 @@ class BrowserSession {
 			'switchTabs': 
                 async (task) => {
                     await this._tabManager.switchTabs(task.data.currentTab);
-
 					return task;
                 },
 
@@ -146,23 +152,28 @@ class BrowserSession {
 			},
 			'read': async (task) => {
 				if(!task.data.selector){
-					task.data.selector = await this._currentPage.evaluate(([click]) => {
+					var nodeInfo = await this._currentPage.evaluate(([click]) => {
 						const generator = new window["SelectorGenerator"]();
-						return generator.GetSelector(document.elementFromPoint(click.x, click.y));
+						return generator.getNodeInfo(generator.grabElementFromPoint(click.x, click.y));
 					},[task.data]);
+
+					task.data.selector = nodeInfo.structuralSelector;
+
+					// We cannot 'read' images, just screenshot it.
+					if(nodeInfo.tagName === "IMG"){
+						(task.type as any) = types.BrowserAction[types.BrowserAction.screenshot];
+					}
 				}
-
-				const elementHandle = await this._currentPage.$(task.data.selector);
-				task.data.text = await elementHandle.textContent();
-
 				return task;
 			},
 			'reset': async () => {
 				await this._tabManager.recycleContext();
 				return types.EmptyAction;
 			},
-			'recording': async () => (types.EmptyAction),
-			'playRecording': async () => (types.EmptyAction),
+			'screenshot': async (task) => {
+				// When recording, screenshots are NOOP - they just get recorded.
+				return task;
+			},
 			'noop': async () => (types.EmptyAction)
         };
 
@@ -183,7 +194,7 @@ class BrowserSession {
 
 				Promise.all(
 					[
-						//Runs task and delay timer simultaneously - if task takes a lot of time, its execution time gets deducted from the delay as well.
+						// Runs task and delay timer simultaneously - if task takes a lot of time, its execution time gets deducted from the delay as well.
 						// Slows the playback down, giving user some time to understarnd the playback flow.
 						actionList[task.payload.type](task.payload),
 						this._playbackDelay ? new Promise(resolve => setTimeout(resolve,this._playbackDelay)) : null
@@ -192,9 +203,12 @@ class BrowserSession {
 						await this._currentPage.waitForLoadState(),
 
 						this._signalCompletion(task);
-						this.sendScreenshot(); // is this the correct time to send screenshots? (after every single action?)
+						this.sendScreenshot({fullPage: true}); // is this the correct time to send screenshots? (after every single action?)
 					})
-					.catch(() => this._signalError(task));
+					.catch((e) => {
+						console.error(e);
+						this._signalError(task, e.message);
+					});
 			}
 		}
 	}

@@ -28,8 +28,12 @@ class TabManager extends EventEmitter {
         page['tabName'] = "Loading...";
 
         page.on('domcontentloaded', async () => {
-            page['tabName'] = await page.title();
-            this.notifyStateChange();
+            try{
+                page['tabName'] = await page.title();
+                this.notifyStateChange();
+            }
+            catch{} // not optimal, just suppressing exceptions (exceptions usually stem from quick navigation, so no biggie, but still.) 
+            
         });
 
         page.on('popup', async (popup: Page) => {

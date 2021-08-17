@@ -17,13 +17,15 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 class StreamWindow extends Component<any, any> {
   private _canvas : React.RefObject<HTMLCanvasElement>;
-  private actionSender : Function;
+  private _actionSender : (...args: any[]) => Promise<void>;
+  private _scrollHeight : number = 0;
+  private _screenBuffer : Blob|null = null;
   
-  constructor(props: {actionSender : (actionType: types.BrowserAction, data: object) => void}){
+  constructor(props: {actionSender : (actionType: types.BrowserAction, data: object) => Promise<void>}){
     super(props);
 
     this._canvas = createRef();
-    this.actionSender = props.actionSender;
+    this._actionSender = props.actionSender;
   }
 
   private getClickPos = (ev : MouseEvent) => {
@@ -31,7 +33,7 @@ class StreamWindow extends Component<any, any> {
       let canvasPos = this._canvas.current.getBoundingClientRect();
       return {
         x: Math.floor((1280/canvasPos.width)*(ev.clientX - canvasPos.left)), 
-        y: Math.floor((720/canvasPos.height)*(ev.clientY - canvasPos.top))
+        y: Math.floor((720/canvasPos.height)*(ev.clientY - canvasPos.top) + this._scrollHeight)
       };
     }
     else{
@@ -39,32 +41,57 @@ class StreamWindow extends Component<any, any> {
     }
   }
 
-  componentDidMount = () => {
+  set buffer(content: Blob) {
+    // setter for external buffer access. resets the viewport (in most cases mimics the default browser behaviour e.g after browsing... needs some more finesse)
+    this._screenBuffer = content;
+    this._scrollHeight = 0;
+    this._flushBuffer();
+  }
 
+  componentDidMount = () => {
     if(this._canvas.current){
-      this._canvas.current.addEventListener('click', (ev) => {
+      let canvas = this._canvas.current;
+
+      canvas.addEventListener('click', (ev) => {
         if(this._canvas.current){
-          this.actionSender(types.BrowserAction.click, this.getClickPos(ev));
-        }
+          this._actionSender(types.BrowserAction.click, this.getClickPos(ev))
+          .catch(console.error);          
+      }});
+
+      canvas.addEventListener('contextmenu', (ev) => {
+        this._actionSender(types.BrowserAction.read, this.getClickPos(ev));
+        ev.preventDefault();
       });
 
-      this._canvas.current.addEventListener('contextmenu', (ev) => {
-        ev.preventDefault();
-        this.actionSender(types.BrowserAction.read, this.getClickPos(ev));
+      canvas.addEventListener('wheel', (ev) => {
+          this._scrollHeight += (ev.deltaY * 720 / (this._canvas.current?.height || 1));
+          this._scrollHeight = (this._scrollHeight < 0) ? 0 : this._scrollHeight;
+          this._flushBuffer();
+          ev.preventDefault();
+      });
+
+      canvas.addEventListener('keydown', (ev) => {
+        console.log(ev.key);
+        if(ev.key.toLocaleLowerCase() === "s"){
+          this._actionSender(types.BrowserAction.screenshot, {})
+          .catch(console.error);   
+        }
       })
     }
   }
 
   
-  drawToCanvas = (image: Blob) => {
+  private _flushBuffer = () => {
     if(this._canvas.current){
       let ctx = this._canvas.current.getContext('2d');
+      
       let background = new Image();
-      background.src = URL.createObjectURL(image);
+      background.src = URL.createObjectURL(this._screenBuffer);
   
-      background.onload = function(){
+      background.onload = () => {
         if(ctx !== null){
-          ctx.drawImage(background,0,0);   
+          ctx?.clearRect(0,0,this._canvas.current?.width || 0, this._canvas.current?.height || 0);
+          ctx.drawImage(background,0,-this._scrollHeight);   
         }
       }
     }
@@ -137,7 +164,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
 
     this._streamChannel.addEventListener('message', event => {
       if(this._canvas.current){
-        this._canvas.current.drawToCanvas(event.data);
+        this._canvas.current.buffer = event.data;
       }
     })
 
@@ -178,7 +205,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
   }
 
   requestAction = (actionType: types.BrowserAction, data: object) => {
-    this._messageChannel?.request({type: types.BrowserAction[actionType], data: data})
+    return this._messageChannel?.request({type: types.BrowserAction[actionType], data: data})
     .then(responseMessage => {
       if(this.state.RecordingState.isRecording){
         this.setState(prevState => (
@@ -195,10 +222,20 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
         ));
       };
     })
-    // does not catch just yet ;
+    // does not catch just yet (just a communication channel, errors should be handled by the requesters!)
   }
 
   playRecording = () : Promise<void> => {
+    if(this.state.RecordingState.isRecording){
+      this.setState(prevState => (
+        {
+          RecordingState:{
+            ...prevState.RecordingState,
+            isRecording: false
+          }
+        }
+      ))
+    }
     if(this.state.RecordingState.recording.actions){ //!== []
       /* Sends all actions to server, waits for ACK (promise resolve) after every sent action. */
       return [{idx: -1, type: 'reset',data: {}},

@@ -3,15 +3,15 @@ export enum BrowserAction {
     'browse',
     'insertText',
     'navigate',
+
     'read',
+    'screenshot',
 
     'openTab',
     'switchTabs',
     'closeTab',
 
     'reset',
-    'playRecording',
-    'recording',
     'noop'
 }
 
