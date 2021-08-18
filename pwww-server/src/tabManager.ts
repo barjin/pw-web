@@ -79,7 +79,7 @@ class TabManager extends EventEmitter {
         if(this._browser.contexts().length === 0){
             // For freshly created (or recycled) browser without context
             console.log("Creating new context...");
-            await this._browser.newContext();
+            await this._browser.newContext({locale: 'en-GB'});
         }
 
 

@@ -39,7 +39,7 @@ process.stdout.write(text + "\\n");
         for(let action of recording){
             if(action.type in this.actions){
                 translationBuffer.push(`${(this.actions as any)[action.type](action.data)}\n`);
-                translationBuffer.push("    await page.waitForLoadState('networkidle');\n");
+                translationBuffer.push("    await page.waitForLoadState();\n");
             }
         }
         translationBuffer.push(this.footer);
@@ -72,15 +72,18 @@ Apify.main(async () => {
 `)});
 
         this.actions["read"] = (data : any) =>
-`    var elementHandle = await page.$("${escapeString(data.selector)}");
+`    var elementHandle = await page.waitForSelector("${escapeString(data.selector)}");
      var text = await elementHandle.innerText();
      await Apify.pushData({data:text});
 `
 
         this.actions["screenshot"] = (data : any) => {
-
-        let codeBuffer = data.selector ?
-`    var elementHandle = await page.$("${escapeString(data.selector)}");
+        //Before taking any kind of screenshot, we want to make sure the images/styles/DOM are all loaded.
+        let codeBuffer = 
+`     await page.waitForLoadState('networkidle');
+`
+        codeBuffer += data.selector ?
+`    var elementHandle = await page.waitForSelector("${escapeString(data.selector)}");
     var screenshotBuffer = await elementHandle.screenshot();
 `:
 `    var screenshotBuffer = await page.screenshot({ fullPage: true });
@@ -102,7 +105,6 @@ this.footer = `
 
     translate(recording: types.Action[]) : Blob{
         if(recording.filter(x => x.type as any === types.BrowserAction[types.BrowserAction.screenshot]).length){
-
             this.footer = 
 `    log.info("Beep boop, your screenshots are available here:");
     const keyValueStore = await Apify.openKeyValueStore();

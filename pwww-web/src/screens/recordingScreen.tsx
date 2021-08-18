@@ -155,8 +155,8 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
       }
     }
     
-    this._streamChannel = new WebSocket('ws://localhost:8081');
-    this._messageChannel = new ACKChannel(new WebSocket('ws://localhost:8080'),_broadcastMsgHandler);
+    this._streamChannel = new WebSocket(`ws://${window.location.hostname}:8081`);
+    this._messageChannel = new ACKChannel(new WebSocket(`ws://${window.location.hostname}:8080`),_broadcastMsgHandler);
 
     this._messageChannel.addEventListener('open', () => {
       this._messageChannel?.send({messageID: null, payload: {type: 'noop', data: {}}}); // Starts/Wakes up the streamed browser (uses no-response .send() instead of .request())
