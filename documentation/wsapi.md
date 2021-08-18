@@ -21,7 +21,7 @@ The "data" field holds action dependent data, i.e.:
 - `click`
 ```
     ...
-    "data":{"x": click x-coordinate, "y": click y-coordinate}
+    "data":{"x": click x-coordinate, "y": click y-coordinate, "selector?": (string - optional, if present, overrides coordinates)}
 }
 ```
 - `browse`
@@ -49,26 +49,32 @@ The "data" field holds action dependent data, i.e.:
     "data":{"closeTab": (number - index of the tab to be closed)}
 }
 ```
-- `playRecording`
+- `insertText`
 ```
     ...
-    "data":{(optional) "delay": (number - length of delay between actions during playback in ms)}
+    "data":{"text": (string - text to be pasted)}
 }
 ```
-- `recording`
+- `reset`
 ```
     ...
-    "data":{"on": (true|false - turn the recording session on/off)}
+    "data":{}
 }
 ```
-- `openTab`
+- `screenshot`
 ```
     ...
-    "data":{} // no content is read from data field
+    "data":{"selector?": (string - optional, if present, screenshot of specified element is taken; if not, screenshot of the whole page gets taken)}
+}
+```
+- `noop`
+```
+    ...
+    "data":{}
 }
 ```
 #### Server -> client messages
-Server can update client on state changes (now only tab bar updates and recording updates). Server is now treated as the single source of truth and with every update the entire data structure is sent, which is not exactly economical.
+Server can update client on state changes (now only tab bar updates and recording updates).
 Possible messages from server to client are:
 - Tab update
 ```
@@ -78,21 +84,4 @@ Possible messages from server to client are:
     "tabs":["Page #1", "Page #2"] // titles of currently open pages 
 }
 ```
-- Recording update (sent when a new action is recorded)
-```
-{
-// Recording example
-    "recording":[   // Array of Where-What pairs
-        {
-            "where":{}, // Currently not in use 
-            "what":{"type":"openTab","data":{}} // Corresponding to the client-invoked action
-        },
-        {
-            where:
-            ...
-        },
-        ...
-    ]
-}
-```
-Format of the recorded action (where-what pair) is also specified in [types.ts](https://github.com/barjin/pw-web/blob/development/backend/src/types.ts) under type *RecordedAction*.
+Format of the recorded action is also specified in [types.ts](https://github.com/barjin/pw-web/blob/4143461f732bac69ab4438eb4fcbf646e01b39b2/pwww-shared/types.ts) under type *Action*.
