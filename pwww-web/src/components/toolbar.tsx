@@ -121,6 +121,7 @@ function TabBar(props: ITabBarProps){
             <BrowserTab
             title={tab?.length > 15 ? tab.substring(0,15)+"…": tab}    
             
+            key={id}
             tab_id = {id}
 
             active = {id === props.tabState.currentTab}

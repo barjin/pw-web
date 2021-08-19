@@ -19,7 +19,7 @@ class StreamWindow extends Component<any, any> {
   private _canvas : React.RefObject<HTMLCanvasElement>;
   private _actionSender : (...args: any[]) => Promise<void>;
   private _scrollHeight : number = 0;
-  private _screenBuffer : Blob|null = null;
+  private _screenBuffer : Blob = new Blob([]);
   
   constructor(props: {actionSender : (actionType: types.BrowserAction, data: object) => Promise<void>}){
     super(props);
@@ -123,6 +123,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
   private _canvas : React.RefObject<StreamWindow>;
   private _messageChannel : ACKChannel|null = null;
   private _streamChannel : WebSocket|null = null;
+  private _stopSignal : boolean = false;
 
   constructor(props : IRecScreenProps){  
     super(props);
@@ -225,6 +226,12 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     // does not catch just yet (just a communication channel, errors should be handled by the requesters!)
   }
 
+  private _Stopper = () => {
+    return new Promise<void>((res,rej) => {
+      if(this._stopSignal) rej(); else res();
+    });
+  }
+
   playRecording = () : Promise<void> => {
     if(this.state.RecordingState.isRecording){
       this.setState(prevState => (
@@ -250,9 +257,10 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
                 currentActionIdx: action.idx
               }}
             ));
-            return this._messageChannel?.request(action);
+            return Promise.all([this._messageChannel?.request(action), this._Stopper()]);
           }).catch(() => {
             console.error(`Action no. ${action.idx} failed :(`);
+            this._stopSignal = false;
             this.setState(prevState => (
               {
                 RecordingState: {
@@ -311,6 +319,10 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
             }}))
           ).catch(() => {}); //if playback fails, recording does not start.
           break;
+      case 'stop':
+        this._stopSignal = true;
+        this.setState((prevState) => ({RecordingState:{...prevState.RecordingState, playbackError: false, currentActionIdx: -1}}));
+        break;
       default:
         break;
     }
@@ -328,6 +340,24 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
               }
             }
           }
+        ),() => {
+          postAPI("updateRecording",this.this.state.RecordingState.recording).catch(console.log);
+        })
+    },
+    updateBlock: function (idx: number, action: types.Action){
+      console.log(this.this.state.RecordingState.recording.actions[idx]);
+      console.log(action);
+      let updatedActions = [...this.this.state.RecordingState.recording.actions];
+      updatedActions[idx] = action;
+      this.this.setState((prevState) => (
+        {...prevState,
+          RecordingState: {
+            ...prevState.RecordingState,
+            recording: { ...prevState.RecordingState.recording,
+              actions: updatedActions
+            }
+          }
+        }
         ),() => {
           postAPI("updateRecording",this.this.state.RecordingState.recording).catch(console.log);
         })

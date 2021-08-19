@@ -36,6 +36,8 @@ class BrowserSession {
 	private async _initialize() : Promise<void> {
 		console.log("Initializing...");
 		this._browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ["--no-sandbox"] } : {});
+		this.close = (() => this._browser.close());
+
 		this._tabManager = await new TabManager(this._browser);
 
 		this._tabManager.on('tabsUpdate',(newState) => {
@@ -58,7 +60,7 @@ class BrowserSession {
 		if(this._browser !== null && this._browser.isConnected()){
 			this._currentPage.screenshot({'type': 'jpeg', ...options})
 				.then((buffer: Buffer) => this._streamingChannel.send(buffer))
-				.catch(console.error);
+				.catch();
 		}
 		else{
 			console.error("[PWWW] Browser is not running, cannot send screenshot!");
@@ -206,7 +208,6 @@ class BrowserSession {
 						this.sendScreenshot({fullPage: true}); // is this the correct time to send screenshots? (after every single action?)
 					})
 					.catch((e) => {
-						console.error(e);
 						this._signalError(task, e.message);
 					});
 			}
@@ -219,6 +220,8 @@ class BrowserSession {
 			this.processTasks();
 		}
 	}
+
+	public close : Function = () => {}; //gets assigned with browser creation
 }
 
 export default BrowserSession;

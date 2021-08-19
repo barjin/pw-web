@@ -43,6 +43,11 @@ class PWWWServer {
 				});
 
 				conn.on('close',() => {
+					for(let session of this.sessions){
+						if(session.token === token){
+							session.browserSession.close();
+						}
+					}
 					this.sessions = this.sessions.filter((x) => x.token !== token);
 					console.log(`[${this.sessions.length}/${process.env["PWWW_MAX_SESSIONS"] || 5}] Session ${token.substring(0,7)} closed.`);
 				});
