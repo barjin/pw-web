@@ -170,13 +170,18 @@ class SelectorGenerator{
             // "Transform" should be a truncating function (using it, the selector equality changes to *=, targetting elements containing values as substrings).
             const attributes : 
                 {
-                attr: string, 
+                attr: RegExp, 
                 condition?: (element: HTMLElement) => boolean,
                 transform?: (attr: string) => string
                 }[]= [
-                {attr:"id"},   //in CSS, #id === [id=...] ???
-                {attr:"accesskey"},
-                {attr:"href", transform: (url: string) : string => {
+                {attr: /^id$/},   //in CSS, #id === [id=...] ???
+                {attr: /^accesskey$/},
+                {attr: /^title$/, transform: shorten(20)},
+                {attr: /^alt$/, transform: shorten(20)},
+                {attr: /^name$/},
+                {attr: /^placeholder$/},
+                {attr: /^data-/},
+                {attr: /^href$/, transform: (url: string) : string => {
                     // Removes potential long query/fragment strings (is it a good idea?)
                     let match = url.match(/^(?<path>(.*?))(?<parameters>([\?\#].*))?$/);
 
@@ -184,17 +189,20 @@ class SelectorGenerator{
                         return url;
                     }
                     return match.groups.path;
-                }},
-                {attr:"title", transform: shorten(20)},
-                {attr: "alt", transform: shorten(20)},
-                {attr: "name"}
+                }}
             ]
         
+            const elemAttrs = Array.from(element.attributes);
             for(let attr of attributes){
-                if(element.getAttribute(attr.attr) !== null){
-                    return attr.transform ? 
-                        `[${attr.attr}*="${attr.transform(element.getAttribute(attr.attr))}"]` : 
-                        `[${attr.attr}="${element.getAttribute(attr.attr)}"]`;
+                let match = elemAttrs.filter(x => x.name.match(attr.attr));
+                if(match.length){
+                    return match.map(x => {
+                        if(attr.transform){
+                            return `[${x.name}*="${attr.transform(x.value)}"]`;
+                        }
+                        return `[${x.name}="${x.value}"]`;
+                        }
+                    ).join("");
                 }
             }
 
@@ -231,7 +239,7 @@ class SelectorGenerator{
             + "\")"
         }
 
-        return element.tagName + innerText.replace(/([\n\r]|\r\n)/gm, " ");
+        return innerText ? element.tagName + innerText : `${this.GetSelectorSemantic(element.parentElement)} > ${element.tagName}`;
     }
 }
 

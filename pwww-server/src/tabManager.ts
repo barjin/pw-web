@@ -2,8 +2,6 @@ const EventEmitter = require('events');
 import type { Browser } from '../playwright/src/client/browser';
 import type { Page } from '../playwright/src/client/page';
 
-import * as types from 'pwww-shared/types';
-
 class TabManager extends EventEmitter {
     private _browser : Browser;
     private _injections : ({path:string}|Function)[] = [];
@@ -87,10 +85,22 @@ class TabManager extends EventEmitter {
 
 		this.currentPage = await currentContext.newPage();
         await this._pageBootstrapper(this.currentPage);
-		//await this.currentPage.goto(typeof(url) === "string" ? url : homeURL);
+		await this.currentPage.goto(typeof(url) === "string" ? url : homeURL);
 	}
 
-    public async closeTab(idx: number) : Promise<void>{
+    public async closeTab(idx: number | Page) : Promise<void>{
+        if(typeof idx !== 'number'){
+            idx = 
+            (() => {
+            for(let i = 0; i < this._pages.length; i++){
+                if(this._pages[i] == idx){
+                    return i;
+                }
+            }
+            throw "Page could not be found :(";
+            })();
+        }
+        
         await this._pages[idx].close();
 
         if(this.currentPage.isClosed()){

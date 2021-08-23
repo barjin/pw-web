@@ -12,26 +12,29 @@ function escapeString(input: string) : string{
 
 class Transpiler {
     protected header = 
-    `(async () => {\nconst {firefox} = require('playwright');
-    const browser = await firefox.launch({headless: false});\n", //for testing purposes
-    const page = await browser.newPage()\n\n"];`;
+    `(async () => {
+    const {firefox} = require('playwright');
+    const browser = await firefox.launch({headless: false}); //headful for testing purposes, can be switched
+    const page = await browser.newPage();
+`;
     
     protected actions : {[key : string] : ((data: any) => string)}  = {
-        'click' : (data) => `await page.click("${escapeString(data.selector)}");`,
-        'browse': (data) => `await page.goto("${escapeString(data.url)}");`,
-        'navigate': (data) => `await page.${data.back ? "goBack();" : "goForward();"}`,
-        'insertText': (data) => `await page.keyboard.insertText("${data.text}");`,
+        'click' : (data) => `\tawait page.click("${escapeString(data.selector)}");`,
+        'browse': (data) => `\tawait page.goto("${escapeString(data.url)}");`,
+        'navigate': (data) => `\tawait page.${data.back ? "goBack();" : "goForward();"}`,
+        'insertText': (data) => `\tawait page.keyboard.insertText("${data.text}");`,
         'read' : (data) => `
-const elementHandle = await page.waitForSelector("${escapeString(data.selector)}",{timeout: 10000});
-var text = await elementHandle.textContent();
-process.stdout.write(text + "\\n");
-        `
+    var elementHandle = await page.waitForSelector("${escapeString(data.selector)}",{timeout: 10000});
+    var text = await elementHandle.textContent();
+    process.stdout.write(text + "\\n");
+`
     }
 
     protected footer = 
     `
-        })();
-    `;
+    browser.close();
+})();
+`;
 
     public translate(recording: types.Action[]) : Blob{
         let translationBuffer = [this.header];
@@ -39,7 +42,7 @@ process.stdout.write(text + "\\n");
         for(let action of recording){
             if(action.type in this.actions){
                 translationBuffer.push(`${(this.actions as any)[action.type](action.data)}\n`);
-                translationBuffer.push("    await page.waitForLoadState();\n");
+                translationBuffer.push("\tawait page.waitForLoadState();\n");
             }
         }
         translationBuffer.push(this.footer);

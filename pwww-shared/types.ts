@@ -3,6 +3,7 @@ export enum BrowserAction {
     'browse',
     'insertText',
     'navigate',
+    'codeblock',
 
     'read',
     'screenshot',
@@ -39,13 +40,22 @@ export type AppState = {
     TabState: {currentTab: number, tabs: string[]},
     RecordingState: {
         isRecording: boolean,
-        playbackError: boolean
+        playback: (null|"cont"|"step"),
+        playbackError: string,
         currentActionIdx: number,
         recording: {
             name: string,
             actions: Action[]
         }
     }
+}
+
+export type RecordingModifier = {
+    this?: any,
+    deleteBlock : (idx: number) => void,
+    rearrangeBlocks : (oldidx: number, newidx: number) => void,
+    updateBlock : (idx: number, action: Action) => void,
+    pushCustomBlock : () => void;
 }
 
 export const EmptyAction = {type: BrowserAction.noop, data: {}};

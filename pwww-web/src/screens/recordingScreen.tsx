@@ -42,7 +42,7 @@ class StreamWindow extends Component<any, any> {
   }
 
   set buffer(content: Blob) {
-    // setter for external buffer access. resets the viewport (in most cases mimics the default browser behaviour e.g after browsing... needs some more finesse)
+    // setter for external buffer access. resets the viewport (in most cases mimics the default browser behaviour e.g after browsing... perhaps would use some more finesse)
     this._screenBuffer = content;
     this._scrollHeight = 0;
     this._flushBuffer();
@@ -124,6 +124,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
   private _messageChannel : ACKChannel|null = null;
   private _streamChannel : WebSocket|null = null;
   private _stopSignal : boolean = false;
+  private _step : Function = () => {};
 
   constructor(props : IRecScreenProps){  
     super(props);
@@ -138,8 +139,9 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
         currentTab: -1
       },
       RecordingState:{
+        playback: null,
         isRecording: false,
-        playbackError: false,
+        playbackError: "",
         currentActionIdx: -1,
         recording: {name: "", actions: []},
       }
@@ -226,23 +228,28 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     // does not catch just yet (just a communication channel, errors should be handled by the requesters!)
   }
 
-  private _Stopper = () => {
+  private _stop = () => {
     return new Promise<void>((res,rej) => {
-      if(this._stopSignal) rej(); else res();
+      if(this._stopSignal) rej({errorMessage:"Execution stopped by user."}); else res();
     });
   }
 
-  playRecording = () : Promise<void> => {
-    if(this.state.RecordingState.isRecording){
-      this.setState(prevState => (
-        {
-          RecordingState:{
-            ...prevState.RecordingState,
-            isRecording: false
-          }
+  private _stepper = () => {
+    return new Promise<void>((res) => {
+      this._step = res;
+    })
+  }
+
+  playRecording = (step : boolean = false) : Promise<void> => {
+    this.setState(prevState => (
+      {
+        RecordingState:{
+          ...prevState.RecordingState,
+          isRecording: false,
+          playback: step ? "step" : "cont"
         }
-      ))
-    }
+      }
+    ));
     if(this.state.RecordingState.recording.actions){ //!== []
       /* Sends all actions to server, waits for ACK (promise resolve) after every sent action. */
       return [{idx: -1, type: 'reset',data: {}},
@@ -253,22 +260,29 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
               {
                 RecordingState: {
                 ...prevState.RecordingState,
-                playbackError: false,
+                playbackError: "",
                 currentActionIdx: action.idx
               }}
             ));
-            return Promise.all([this._messageChannel?.request(action), this._Stopper()]);
-          }).catch(() => {
+            return Promise.all([
+              this._messageChannel?.request(action), 
+              this.state.RecordingState.playback === "step" ? this._stepper() : Promise.resolve(), 
+              this._stop()
+            ]);
+          }).catch((e) => {
             console.error(`Action no. ${action.idx} failed :(`);
             this._stopSignal = false;
             this.setState(prevState => (
               {
                 RecordingState: {
                 ...prevState.RecordingState,
-                playbackError: true,
+                playback: null,
+                playbackError: e.errorMessage,
               }}
             ));
-            return Promise.reject();
+            console.log(e);
+            console.log(this.state);
+            return Promise.reject(e);
           });
         }, Promise.resolve())
         .then(() =>
@@ -276,6 +290,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
             {
               RecordingState: {
               ...prevState.RecordingState,
+              playback: null,
               currentActionIdx: -1
             }})) // removes highlight after playback
         );
@@ -319,19 +334,29 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
             }}))
           ).catch(() => {}); //if playback fails, recording does not start.
           break;
+      case 'step':
+        if(this.state.RecordingState.playback === "step"){
+          this._step();
+        }
+        else{
+          this.playRecording(true).catch(()=>{});
+        }
+        
+        break;
       case 'stop':
         this._stopSignal = true;
-        this.setState((prevState) => ({RecordingState:{...prevState.RecordingState, playbackError: false, currentActionIdx: -1}}));
+        this._step(); // to resolve the pending "Step" promise, which would block the termination of the playback otherwise.
+        this.setState((prevState) => ({RecordingState:{...prevState.RecordingState, playbackError: "", currentActionIdx: -1}}));
         break;
       default:
         break;
     }
   }
 
-  recordingModifier = {
+  recordingModifier : types.RecordingModifier = {
     this: this,
     deleteBlock: function (idx: number){
-        this.this.setState((prevState) => (
+        this.this.setState((prevState : types.AppState) => (
           {...prevState,
             RecordingState: {
               ...prevState.RecordingState,
@@ -349,7 +374,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
       console.log(action);
       let updatedActions = [...this.this.state.RecordingState.recording.actions];
       updatedActions[idx] = action;
-      this.this.setState((prevState) => (
+      this.this.setState((prevState: types.AppState) => (
         {...prevState,
           RecordingState: {
             ...prevState.RecordingState,
@@ -372,12 +397,33 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
       actions.splice(oldidx,1);
       actions.splice(newidx,0,action);
 
-      this.this.setState((prevState) => (
+      this.this.setState((prevState: types.AppState) => (
         {...prevState,
           RecordingState: {
             ...prevState.RecordingState,
             recording: { ...prevState.RecordingState.recording,
               actions: actions
+            }
+          }
+        }
+      ),() => {
+        postAPI("updateRecording",this.this.state.RecordingState.recording).catch(console.log);
+      })
+    },
+    pushCustomBlock: function (){
+      this.this.setState((prevState: types.AppState) => (
+        {...prevState,
+          RecordingState: {
+            ...prevState.RecordingState,
+            recording: { 
+              ...prevState.RecordingState.recording,
+              actions: [
+                ...prevState.RecordingState.recording.actions,
+                  {
+                   type: "codeblock",
+                   data:{"code":"//Include your implementation here..."}
+                  }
+              ]
             }
           }
         }

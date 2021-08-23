@@ -59,19 +59,20 @@ class BrowserSession {
 	private async sendScreenshot(options? : any) : Promise<void>{
 		if(this._browser !== null && this._browser.isConnected()){
 			this._currentPage.screenshot({'type': 'jpeg', ...options})
-				.then((buffer: Buffer) => this._streamingChannel.send(buffer))
-				.catch();
+				.catch(() => console.log("dropping screenshot..."))
+				.then((buffer: Buffer) => this._streamingChannel.send(buffer));
+				
 		}
 		else{
 			console.error("[PWWW] Browser is not running, cannot send screenshot!");
 		}
 	}
 
-	private _signalError(message : types.WSMessage<any>, errorMessage: string) : void{
+	private _signalError(message : types.WSMessage<any>, e: string) : void{
 		this._sendToClient(JSON.stringify({
 			responseID: message.messageID,
 			error: true,
-			errorMessage: errorMessage
+			errorMessage: e
 		}));
 	}
 
@@ -128,7 +129,31 @@ class BrowserSession {
 
 					return task;
                 },
+			'codeblock':
+				async (task) => {
+					
+					// storing URL in case we need to reload page (if user-submitted code stuck in infinite loop, simple page.reload() will not work due to the single-threaded nature of JS.)
+					let url = this._currentPage.url();
+					let error = true;
+					
+					// the user submitted code is evaluated in the browser context (allowing user to run code on the server directly would probably pose as a security threat)
+					await Promise.race([
+						new Promise((res) => {
+							this._currentPage.evaluate(task.data["code"])
+								.then(() => {error = false; res(null)});
+						}),
+						new Promise((_,rej) => setTimeout(() => {
+							if(error){
+								rej({message: "Custom code block timeout, reloading page..."}),
+								this._tabManager.closeTab(this._currentPage);
+								this._tabManager.newTab(url);
+							}
+						},5000))	// timeout to prevent action execution queue from freezing
+					]);
 
+					return task;
+				}
+			,
 			'openTab':
                 async (task) => {
                     await this._tabManager.newTab();
@@ -205,7 +230,9 @@ class BrowserSession {
 						await this._currentPage.waitForLoadState(),
 
 						this._signalCompletion(task);
-						this.sendScreenshot({fullPage: true}); // is this the correct time to send screenshots? (after every single action?)
+						if(task.payload.type as any !== "read" && task.payload.type as any !== "screenshot"){
+							this.sendScreenshot({fullPage: true});
+						}
 					})
 					.catch((e) => {
 						this._signalError(task, e.message);
