@@ -17,16 +17,17 @@ In the following section, I introduce all the possible use cases in a more detai
 - ✔️ When finished, user stops recording.
 
 #### Playing an recording
-🟡 After recording a code snippet, the user can replay the recording to review it.
+✔️ After recording a code snippet, the user can replay the recording to review it.
 - ✔️ User selects the desired recording and opens it.
-- 🟡 Using a simple interface, user can play/pause/resume the recording or set delay between individual commands.
+- ✔️ Using a simple interface, user can play/pause/resume the recording or set delay between individual commands.
+    - Delay settings/pause/resume not implemented, if closer examination of the recording is required, step-by-step mode can be used.
 - ✔️ By starting the playback, user spawns a new Playwright environment on the server, in which is then the current code executed. As with recording creation, user can see the progress of recording playback through window capture stream from server.
-- 🟡 User can also review the recording in a step-by-step manner (execution of every new command waits for a signal from the user).
+- ✔️ User can also review the recording in a step-by-step manner (execution of every new command waits for a signal from the user).
 
 #### Editing a recording
-🟡 After recording a code snippet, the user can edit its parts to achieve the expected behaviour.
-- 🟡 After recording, user can pick an arbitrary code block and edit it.
-- 🟡 Furthermore, user can also add their own custom code.
+✔️ After recording a code snippet, the user can edit its parts to achieve the expected behaviour.
+- ✔️ After recording, user can pick an arbitrary code block and edit it.
+- ✔️ Furthermore, user can also add their own custom code.
 - ✔️ User can rearrange the code blocks and therefore change the order of their execution. 
 - ✔️ User can delete existing code.
 
