@@ -36,19 +36,19 @@ After starting the server, the PWWW user interface is available at [http://local
 # Going pro
 While being very useful for e.g. testing user workflows on different pages, the use cases for PWWW might now seem a little limited. Here are some tips to get the best out of your instance of PWWW.
 ## Exporting
-    - Using external services (like [Apify](https://apify.com/)) or running the generated code in your own node.js installation is fairly simple - click the "Export" button in the upper left corner of the recording screen, select your environment and download the executable .js file.
+- Using external services (like [Apify](https://apify.com/)) or running the generated code in your own node.js installation is fairly simple - click the "Export" button in the upper left corner of the recording screen, select your environment and download the executable .js file.
 ## Outputs
-    - Sometimes, you would like to create an automated workflow to extract some data from a web page. PWWW can record "read" action, which reads text content of the specified element. The read action is invoked using the *right mouse button* on the element you want to read. Using the recording (and playback) functionality of PWWW, read action is NOOP (has no effect) and works only when the code is exported.
-    - Similarly, right-clicking an image element will take a screenshot of it. Pressing the `S` key will take screenshot of the whole page. Just like read action, screenshot is NOOP in PWWW.
+- Sometimes, you would like to create an automated workflow to extract some data from a web page. PWWW can record "read" action, which reads text content of the specified element. The read action is invoked using the *right mouse button* on the element you want to read. Using the recording (and playback) functionality of PWWW, read action is NOOP (has no effect) and works only when the code is exported.
+- Similarly, right-clicking an image element will take a screenshot of it. Pressing the `S` key will take screenshot of the whole page. Just like read action, screenshot is NOOP in PWWW.
 ## Editing actions
-    - On the recording page, the recording can be edited:
-        - By double-clicking the code block, an edit modal will show up. 
-        - By clicking the red cross in the upper right corner of a code block, the code block can be removed from the recording.
-        - The actions in the recording can be reordered in drag-and-drop manner.
+- On the recording page, the recording can be edited:
+    - By double-clicking the code block, an edit modal will show up. 
+    - By clicking the red cross in the upper right corner of a code block, the code block can be removed from the recording.
+    - The actions in the recording can be reordered in drag-and-drop manner.
 ## Custom code
-    - When the recording session is inactive, user can add custom code blocks to the recording by clicking the "Custom code block" button at the end of the recording. The newly generated block can be then edited by double-clicking it. 
-    - This custom code is run inside of the streamed browser and it has access to regular browser js environment.
-    - PWWW employs internal time limits for the custom code execution (5000 ms as of now). When this limit is reached, PWWW will reload the current page, stopping the script execution (this is mainly to deal with possible infinite loops and to prevent service expoitation). These limits are not passed into the exported code.
+- When the recording session is inactive, user can add custom code blocks to the recording by clicking the "Custom code block" button at the end of the recording. The newly generated block can be then edited by double-clicking it. 
+- This custom code is run inside of the streamed browser and it has access to regular browser js environment.
+- PWWW employs internal time limits for the custom code execution (5000 ms as of now). When this limit is reached, PWWW will reload the current page, stopping the script execution (this is mainly to deal with possible infinite loops and to prevent service expoitation). These limits are not passed into the exported code.
 ### Possible complications
 - Just like clicking, the read action uses generated selectors (which are a little different here, but still). Similar problems with selector ambiguity can happen.
 - Reordering your recording and/or deleting certain actions can break recording's flow due to causality, proceed with care!
