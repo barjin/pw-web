@@ -72,8 +72,6 @@ class TabManager extends EventEmitter {
     }
 
 	public async newTab(url? : string) : Promise<void>{
-        const homeURL = "https://wikipedia.org";
-
         if(this._browser.contexts().length === 0){
             // For freshly created (or recycled) browser without context
             console.log("Creating new context...");
@@ -85,7 +83,10 @@ class TabManager extends EventEmitter {
 
 		this.currentPage = await currentContext.newPage();
         await this._pageBootstrapper(this.currentPage);
-		await this.currentPage.goto(typeof(url) === "string" ? url : homeURL);
+        
+        if(typeof(url) === "string"){
+            await this.currentPage.goto(url);
+        }
 	}
 
     public async closeTab(idx: number | Page) : Promise<void>{

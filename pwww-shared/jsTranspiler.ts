@@ -11,9 +11,12 @@ function escapeString(input: string) : string{
 }
 
 class Transpiler {
+    screenshotID : number = 0;
+
     protected header = 
     `(async () => {
     const {firefox} = require('playwright');
+    const fs = require('fs');
     const browser = await firefox.launch({headless: false}); //headful for testing purposes, can be switched
     const page = await browser.newPage();
 `;
@@ -27,7 +30,24 @@ class Transpiler {
     var elementHandle = await page.waitForSelector("${escapeString(data.selector)}",{timeout: 10000});
     var text = await elementHandle.textContent();
     process.stdout.write(text + "\\n");
-`
+`,
+        'screenshot' : (data) => {
+                //Before taking any kind of screenshot, we want to make sure the images/styles/DOM are all loaded.
+                let codeBuffer = 
+        `     await page.waitForLoadState('networkidle');
+        `
+                codeBuffer += data.selector ?
+        `    var elementHandle = await page.waitForSelector("${escapeString(data.selector)}");
+    var screenshotBuffer = await elementHandle.screenshot();
+        `:
+        `    var screenshotBuffer = await page.screenshot({ fullPage: true });
+        `
+                    codeBuffer += 
+        `    fs.writeFileSync("SCREENSHOT_${this.screenshotID}.png", screenshotBuffer);
+        `;
+                    this.screenshotID += 1;
+                    return codeBuffer;
+        }
     }
 
     protected footer = 

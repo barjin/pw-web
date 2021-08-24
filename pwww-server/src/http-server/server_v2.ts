@@ -105,7 +105,8 @@ class APIHandler {
 
     private _newRecording(req, res){
         try{
-            let filename = req.body.name;
+            let filenameSep = (req.body.name).split(/\/|\\/); // simple protection against ../../ paths
+            let filename = filenameSep[filenameSep.length-1];
             if(!fs.existsSync(paths.savePath)) fs.mkdirSync(paths.savePath);
             if(fs.existsSync(path.join(paths.savePath, filename))) throw "Name already in use.";
             fs.writeFile(path.join(paths.savePath, filename), "[]", this._postOKCallback(res));
@@ -117,7 +118,8 @@ class APIHandler {
 
     private _updateRecording(req, res){
         try{
-            let filename = req.body.name;
+            let filenameSep = (req.body.name).split(/\/|\\/); // simple protection against ../../ paths
+            let filename = filenameSep[filenameSep.length-1];
             fs.writeFile(path.join(paths.savePath, filename), JSON.stringify(req.body.actions), this._postOKCallback(res));
         }
         catch(e){
