@@ -1,7 +1,7 @@
 # PWWW User documentation
 Thank you for choosing PWWW as your Playwright code generator! In the following document, you will find everything you need to get started with PWWW. 
 # Installation
-To run PWWW, we first need to run the server (if someone has setup the server for you, you can skip to the [First Steps part](./#first-steps)).
+To run PWWW, we first need to run the server (if someone has setup the server for you, you can skip to the [First Steps part](./userdocumentation.md#first-steps)).
 The server setup is quite simple, the easiest solution is to use the official Docker image [`barjin/pw-web`](https://hub.docker.com/repository/docker/barjin/pw-web).
 To run this Docker image, execute following commands in the shell of your choice:
 ```
@@ -46,9 +46,7 @@ While being very useful for e.g. testing user workflows on different pages, the 
     - By clicking the red cross in the upper right corner of a code block, the code block can be removed from the recording.
     - The actions in the recording can be reordered in drag-and-drop manner.
 ## Custom code
-- When the recording session is inactive, user can add custom code blocks to the recording by clicking the "Custom code block" button at the end of the recording. The newly generated block can be then edited by double-clicking it. 
-- This custom code is run inside of the streamed browser and it has access to regular browser js environment.
-- PWWW employs internal time limits for the custom code execution (5000 ms as of now). When this limit is reached, PWWW will reload the current page, stopping the script execution (this is mainly to deal with possible infinite loops and to prevent service expoitation). These limits are not passed into the exported code.
+
 ### Possible complications
 - Just like clicking, the read action uses generated selectors (which are a little different here, but still). Similar problems with selector ambiguity can happen.
 - Reordering your recording and/or deleting certain actions can break recording's flow due to causality, proceed with care!
