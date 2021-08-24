@@ -9,9 +9,9 @@ class ACKChannel {
       }[] = [];
     
     private _WSChannel : WebSocket;
-    private _broadcastCallback : (arg0 : object) => void;
+    private _broadcastCallback : (arg0 : Blob) => void;
   
-    constructor(wsChannel : WebSocket, broadcastCallback : (arg0 : object) => void){
+    constructor(wsChannel : WebSocket, broadcastCallback : (arg0 : Blob) => void){
       this._WSChannel = wsChannel;
       this._broadcastCallback = broadcastCallback;
       this._WSChannel.addEventListener('message',this.messageReceiver);
@@ -30,28 +30,34 @@ class ACKChannel {
       this._WSChannel.send(JSON.stringify(data));
     }
   
-    messageReceiver = (message : { data: string }) : void => {
-      let obj = JSON.parse(message.data);
-      if("responseID" in obj){
-        console.log(obj);
-        // If there is id property in the received object, it should correspond to one of the sent (now pending) messages (this invariant should be respected by both sides - no responseID without intital messageID (request)!)
-        // When should be the request rejected? (timeout/errors?)
-        for(let i = 0; i < this._pendingActions.length; i++){
-          if(this._pendingActions[i].messageID === obj.responseID){
-            if("error" in obj){
-              this._pendingActions[i].reject(obj);
+    messageReceiver = (message : { data: Blob }) : void => {
+      try{
+        var obj = JSON.parse(message.data as any);
+
+        if("responseID" in obj){
+          console.log(obj);
+          // If there is id property in the received object, it should correspond to one of the sent (now pending) messages (this invariant should be respected by both sides - no responseID without intital messageID (request)!)
+          // When should be the request rejected? (timeout/errors?)
+          for(let i = 0; i < this._pendingActions.length; i++){
+            if(this._pendingActions[i].messageID === obj.responseID){
+              if("error" in obj){
+                this._pendingActions[i].reject(obj);
+              }
+              else{
+                this._pendingActions[i].resolve(obj);
+              }
+              this._pendingActions.splice(i,1);
+              break;
             }
-            else{
-              this._pendingActions[i].resolve(obj);
-            }
-            this._pendingActions.splice(i,1);
-            break;
           }
         }
+        else{
+          // In this case, this message is not a response to anything and gets processed using the "broadcast" callback.
+          this._broadcastCallback(message.data);
+        }
       }
-      else{
-        // In this case, this message is not a response to anything and gets processed using the "broadcast" callback.
-        this._broadcastCallback(obj);
+      catch{
+        this._broadcastCallback(message.data);
       }
     }
   

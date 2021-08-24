@@ -18,14 +18,16 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 class StreamWindow extends Component<any, any> {
   private _canvas : React.RefObject<HTMLCanvasElement>;
   private _actionSender : (...args: any[]) => Promise<void>;
+  private _requestScreenshot : (screenNumber: number) => void;
   private _scrollHeight : number = 0;
-  private _screenBuffer : Blob = new Blob([]);
+  private _screenBuffer : Blob[] = [new Blob([])];
   
-  constructor(props: {actionSender : (actionType: types.BrowserAction, data: object) => Promise<void>}){
+  constructor(props: {actionSender : (actionType: types.BrowserAction, data: object) => Promise<void>, screenRequester: (screenNumber: number) => void}){
     super(props);
 
     this._canvas = createRef();
     this._actionSender = props.actionSender;
+    this._requestScreenshot = props.screenRequester;
   }
 
   private getClickPos = (ev : MouseEvent) => {
@@ -41,11 +43,15 @@ class StreamWindow extends Component<any, any> {
     }
   }
 
-  set buffer(content: Blob) {
-    // setter for external buffer access. resets the viewport (in most cases mimics the default browser behaviour e.g after browsing... perhaps would use some more finesse)
-    this._screenBuffer = content;
-    this._scrollHeight = 0;
+  addScreen(idx: number, data: Blob) : void{
+    this._screenBuffer[idx] = data;
     this._flushBuffer();
+  }
+
+  resetView(): void {
+    // setter for external buffer access. resets the viewport (in most cases mimics the default browser behaviour e.g after browsing... perhaps would use some more finesse)
+    this._scrollHeight = 0;
+    this._screenBuffer = [];
   }
 
   componentDidMount = () => {
@@ -64,8 +70,18 @@ class StreamWindow extends Component<any, any> {
       });
 
       canvas.addEventListener('wheel', (ev) => {
+          let heightBackup = this._scrollHeight;
           this._scrollHeight += (ev.deltaY * 720 / (this._canvas.current?.height || 1));
           this._scrollHeight = (this._scrollHeight < 0) ? 0 : this._scrollHeight;
+
+          if(this._scrollHeight > ((this._screenBuffer.length-2)*720)){ //always keeping at least 1 screen in advance
+            this._requestScreenshot(this._screenBuffer.length);
+          }
+
+          if(this._scrollHeight > 720*(this._screenBuffer.length-1)){ //when at the bottom of the page, this stops user from completely drifting away
+            this._scrollHeight = heightBackup;
+          }
+
           this._flushBuffer();
           ev.preventDefault();
       });
@@ -85,13 +101,27 @@ class StreamWindow extends Component<any, any> {
     if(this._canvas.current){
       let ctx = this._canvas.current.getContext('2d');
       
-      let background = new Image();
-      background.src = URL.createObjectURL(this._screenBuffer);
+      let firstTileIndex = Math.floor(this._scrollHeight/720);
+      if(this._screenBuffer.length <= firstTileIndex){
+        return;
+      }
+
+      let firstBackground = new Image();
+      let secondBackground = new Image();
+      
+      try{
+        firstBackground.src = URL.createObjectURL(this._screenBuffer[firstTileIndex]);
+        if(firstTileIndex+1 < this._screenBuffer.length){ // useful at the end of the pages 
+          secondBackground.src = URL.createObjectURL(this._screenBuffer[firstTileIndex+1]);
+        }
+      }
+      catch{};
   
-      background.onload = () => {
+      secondBackground.onload = () => {
         if(ctx !== null){
           ctx?.clearRect(0,0,this._canvas.current?.width || 0, this._canvas.current?.height || 0);
-          ctx.drawImage(background,0,-this._scrollHeight);   
+          ctx.drawImage(firstBackground,0,-(this._scrollHeight%720));
+          ctx.drawImage(secondBackground,0,720-(this._scrollHeight%720));
         }
       }
     }
@@ -122,9 +152,13 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
   location: any;
   private _canvas : React.RefObject<StreamWindow>;
   private _messageChannel : ACKChannel|null = null;
-  private _streamChannel : WebSocket|null = null;
+  private _streamChannel : ACKChannel|null = null;
+  
   private _stopSignal : boolean = false;
   private _step : Function = () => {};
+
+  private currentScreencastRequestIdx: number = 0;
+  private requestedScreens : number[] = [];
 
   constructor(props : IRecScreenProps){  
     super(props);
@@ -149,27 +183,26 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
   }
 
   private _streamSetup = () => {
-    const _broadcastMsgHandler = (obj : object) => {
+    const _broadcastMsgHandler = (data : Blob) => {
+      let obj = JSON.parse(data as any);
       if("tabs" in obj){
         this.setState({TabState: (obj as types.AppState["TabState"])});
       }
       else if ("token" in obj){
-        this._streamChannel?.send(JSON.stringify({"token": (obj as {token:string}).token}));
+        this._streamChannel?.send({"token": (obj as {token:string}).token});
       }
     }
+
+    const _storeRequestedScreencast = (obj : Blob) => {
+      this._canvas.current?.addScreen(this.currentScreencastRequestIdx,obj);
+    }
     
-    this._streamChannel = new WebSocket(`ws://${window.location.hostname}:8081`);
+    this._streamChannel = new ACKChannel(new WebSocket(`ws://${window.location.hostname}:8081`), _storeRequestedScreencast)
     this._messageChannel = new ACKChannel(new WebSocket(`ws://${window.location.hostname}:8080`),_broadcastMsgHandler);
 
     this._messageChannel.addEventListener('open', () => {
       this._messageChannel?.send({messageID: null, payload: {type: 'noop', data: {}}}); // Starts/Wakes up the streamed browser (uses no-response .send() instead of .request())
     });
-
-    this._streamChannel.addEventListener('message', event => {
-      if(this._canvas.current){
-        this._canvas.current.buffer = event.data;
-      }
-    })
 
     this._messageChannel.addEventListener('close', () => {
       alert("The connection to the server has been closed. Please, check if the server is running, refresh this page and try again...");
@@ -207,6 +240,25 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     console.log(this.state);
   }
 
+  requestScreenshot = (screenNumber: number) : void => {
+    if(this.requestedScreens.includes(screenNumber)){
+      return;
+    }
+    this.requestedScreens.push(screenNumber);
+    this._streamChannel?.request({screenNumber: screenNumber})
+      .then(() => {this.currentScreencastRequestIdx = screenNumber})
+      .catch(console.error);
+  }
+
+  private _initRender(){
+      return (() => {
+      this._canvas.current?.resetView();
+      this.requestedScreens = [];
+      this.requestScreenshot(0);
+      this.requestScreenshot(1);
+      });
+  }
+
   requestAction = (actionType: types.BrowserAction, data: object) => {
     return this._messageChannel?.request({type: types.BrowserAction[actionType], data: data})
     .then(responseMessage => {
@@ -225,6 +277,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
         ));
       };
     })
+    .then(this._initRender());
     // does not catch just yet (just a communication channel, errors should be handled by the requesters!)
   }
 
@@ -263,7 +316,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
                 playbackError: "",
                 currentActionIdx: action.idx
               }}
-            ));
+            ),this._initRender());
             return Promise.all([
               this._messageChannel?.request(action), 
               this.state.RecordingState.playback === "step" ? this._stepper() : Promise.resolve(), 
@@ -291,8 +344,8 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
               RecordingState: {
               ...prevState.RecordingState,
               playback: null,
-              currentActionIdx: -1
-            }})) // removes highlight after playback
+              currentActionIdx: -1 // removes highlight after playback
+            }}), this._initRender()) 
         );
     };
     return Promise.resolve();
@@ -454,7 +507,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
                 <ToolBar tabState={this.state.TabState} navigationCallback={this.requestAction} />
                 <a href="#" onClick={this.insertText}>Insert Text</a>
                 <Row>
-                  <StreamWindow ref={this._canvas} actionSender={this.requestAction}/>
+                  <StreamWindow ref={this._canvas} actionSender={this.requestAction} screenRequester={this.requestScreenshot}/>
                 </Row>
                 </Container>
               </Col>

@@ -26,6 +26,7 @@ class BrowserSession {
 		this._streamingChannel = streamingChannel;
 
 		messagingChannel.on('message', (message: string) => this.enqueueTask(JSON.parse(message)));
+		streamingChannel.on('message', (message: string) => this._requestScreenshot(JSON.parse(message)));
 		// on close?		
 	}
 
@@ -48,7 +49,7 @@ class BrowserSession {
 
 		console.log("Opening new tab...");
 		await this._tabManager.newTab();
-	}
+	};
 
 	private _sendToClient = (...data) => {
 		data.forEach(element => {
@@ -56,28 +57,42 @@ class BrowserSession {
 		});
 	}
 
-	private async sendScreenshot(options? : any) : Promise<void>{
+	private async _requestScreenshot(message: types.WSMessage<{screenNumber: number}>): Promise<void>{
 		if(this._browser !== null && this._browser.isConnected()){
-			this._currentPage.screenshot({'type': 'jpeg', ...options})
-				.catch(() => console.log("dropping screenshot..."))
-				.then((buffer: Buffer) => this._streamingChannel.send(buffer));
-				
+			this._currentPage.screenshot({type: 'jpeg', clip:{x: 0, y:message.payload.screenNumber*720, width: 1280, height: 720}, fullPage: true})
+				.then(buffer => {
+					this._signalCompletion(message,this._streamingChannel);
+					this._streamingChannel.send(buffer);
+				})
+			.catch(e => this._signalError(message,e.message,this._streamingChannel))
 		}
 		else{
 			console.error("[PWWW] Browser is not running, cannot send screenshot!");
 		}
 	}
 
-	private _signalError(message : types.WSMessage<any>, e: string) : void{
-		this._sendToClient(JSON.stringify({
+	// private async sendScreenshot(options? : any) : Promise<void>{
+	// 	if(this._browser !== null && this._browser.isConnected()){
+	// 		this._currentPage.screenshot({'type': 'jpeg', ...options})
+	// 			.catch(() => console.log("dropping screenshot..."))
+	// 			.then((buffer: Buffer) => this._streamingChannel.send(buffer));
+				
+	// 	}
+	// 	else{
+	// 		console.error("[PWWW] Browser is not running, cannot send screenshot!");
+	// 	}
+	// }
+
+	private _signalError(message : types.WSMessage<any>, e: string, channel : ws = this._messagingChannel) : void{
+		channel.send(JSON.stringify({
 			responseID: message.messageID,
 			error: true,
 			errorMessage: e
 		}));
 	}
 
-	private _signalCompletion(message : types.WSMessage<any>) : void{
-		this._sendToClient(JSON.stringify({
+	private _signalCompletion(message : types.WSMessage<any>, channel : ws = this._messagingChannel) : void{
+		channel.send(JSON.stringify({
 			responseID: message.messageID,
 			payload: message.payload}));
 	}
@@ -230,9 +245,6 @@ class BrowserSession {
 						await this._currentPage.waitForLoadState(),
 
 						this._signalCompletion(task);
-						if(task.payload.type as any !== "read" && task.payload.type as any !== "screenshot"){
-							this.sendScreenshot({fullPage: true});
-						}
 					})
 					.catch((e) => {
 						this._signalError(task, e.message);
