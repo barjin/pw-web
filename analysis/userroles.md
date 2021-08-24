@@ -13,7 +13,8 @@ The following points sum up the client's requirements for the solution in a prio
 ##### 🔥 Crucial
 - ✔️ the solution shall enable user to record their actions in the streamed *Playwright* environment
 - ✔️ the solution shall export the recorded actions as a *Playwright* script after recording (when requested) 
-- 🟡 during the recording, the solution shall allow user to edit the code manually to add custom *Playwright* actions
+- ✔️ during the recording, the solution shall allow user to edit the code manually to add custom *Playwright* actions
+    - the "Code block" approach has been implemented, no direct code editing (unless custom code block is used).
 - ✔️ the solution shall be able to replay an existing recording
 - ✔️ the solution shall be entirely accessible through a conventional modern web browser *(Chrome 87+, Firefox 84+ and similar)* with no need to install any additional software on the client-side.
 - ✔️ the solution shall be a single-user application, no authentication / user managmement is required.
@@ -21,7 +22,8 @@ The following points sum up the client's requirements for the solution in a prio
 
 ##### ❗ Important
 - ✔️ during the recording phase, the solution shall record the actions in a "block-coding" manner ("click", "open URL" etc.) to allow for simple and user-friendly code manipulation.
-- 🟡 during the playback phase, the solution shall allow user to stop the playback, edit its parts and save this edited recording (or save this as a new file)
+- ✔️ during the playback phase, the solution shall allow user to stop the playback, edit its parts and save this edited recording (or save this as a new file)
 
 ##### ❕ Nice to have
-- 🟡 the solution shall allow user to replay the code in step-by-step fashion (according to the "code blocks" from the previous point)
+- ✔️ the solution shall allow user to replay the code in step-by-step fashion (according to the "code blocks" from the previous point)
+    - The playback must be started with the "Step-by-Step" button, otherwise the "Next Step" functionality is disabled.

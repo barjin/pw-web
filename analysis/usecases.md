@@ -3,7 +3,7 @@ In this part of the project analysis, I describe possible use cases and workflow
 
 ### UML Use Case Diagram
 In the following diagram, the relations between actors and their use cases are depicted.
-![UML Use Case Diagram](./umldiagram.png)
+![UML Use Case Diagram](./img/umldiagram.png)
 
 ### Use case descriptions
 In the following section, I introduce all the possible use cases in a more detailed manner and describe the required steps to achieve those. 
