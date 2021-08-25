@@ -15,6 +15,9 @@ import {getAPI, postAPI} from '../restAPI';
 import '../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+const VIEWPORT_W = 1280;
+const VIEWPORT_H = 720;
+
 class StreamWindow extends Component<any, any> {
   private _canvas : React.RefObject<HTMLCanvasElement>;
   private _actionSender : (...args: any[]) => Promise<void>;
@@ -34,8 +37,8 @@ class StreamWindow extends Component<any, any> {
     if(this._canvas.current){
       let canvasPos = this._canvas.current.getBoundingClientRect();
       return {
-        x: Math.floor((1280/canvasPos.width)*(ev.clientX - canvasPos.left)), 
-        y: Math.floor((720/canvasPos.height)*(ev.clientY - canvasPos.top) + this._scrollHeight)
+        x: Math.floor((VIEWPORT_W/canvasPos.width)*(ev.clientX - canvasPos.left)), 
+        y: Math.floor((VIEWPORT_H/canvasPos.height)*(ev.clientY - canvasPos.top) + this._scrollHeight)
       };
     }
     else{
@@ -71,14 +74,14 @@ class StreamWindow extends Component<any, any> {
 
       canvas.addEventListener('wheel', (ev) => {
           let heightBackup = this._scrollHeight;
-          this._scrollHeight += (ev.deltaY * 720 / (this._canvas.current?.height || 1));
+          this._scrollHeight += (ev.deltaY * VIEWPORT_H / (this._canvas.current?.height || 1));
           this._scrollHeight = (this._scrollHeight < 0) ? 0 : this._scrollHeight;
 
-          if(this._scrollHeight > ((this._screenBuffer.length-2)*720)){ //always keeping at least 1 screen in advance
+          if(this._scrollHeight > ((this._screenBuffer.length-2)*VIEWPORT_H)){ //always keeping at least 1 screen in advance
             this._requestScreenshot(this._screenBuffer.length);
           }
 
-          if(this._scrollHeight > 720*(this._screenBuffer.length-1)){ //when at the bottom of the page, this stops user from completely drifting away
+          if(this._scrollHeight > VIEWPORT_H*(this._screenBuffer.length-1)){ //when at the bottom of the page, this stops user from completely drifting away
             this._scrollHeight = heightBackup;
           }
 
@@ -101,8 +104,8 @@ class StreamWindow extends Component<any, any> {
     if(this._canvas.current){
       let ctx = this._canvas.current.getContext('2d');
       
-      let firstTileIndex = Math.floor(this._scrollHeight/720);
-      if(this._screenBuffer.length <= firstTileIndex){
+      let firstTileIndex = Math.floor(this._scrollHeight/VIEWPORT_H);
+      if(this._screenBuffer.length <= firstTileIndex){ // in case even the first tile is not loaded yet
         return;
       }
 
@@ -110,20 +113,23 @@ class StreamWindow extends Component<any, any> {
       let secondBackground = new Image();
       
       try{
-        firstBackground.src = URL.createObjectURL(this._screenBuffer[firstTileIndex]);
-        if(firstTileIndex+1 < this._screenBuffer.length){ // useful at the end of the pages 
-          secondBackground.src = URL.createObjectURL(this._screenBuffer[firstTileIndex+1]);
-        }
+          firstBackground.src = URL.createObjectURL(this._screenBuffer[firstTileIndex]);
+          if(firstTileIndex+1 < this._screenBuffer.length){ // useful at the end of the pages 
+            secondBackground.src = URL.createObjectURL(this._screenBuffer[firstTileIndex+1]);
+            secondBackground.onload = () => {
+              ctx?.clearRect(0,0,VIEWPORT_W || 0, VIEWPORT_H || 0);    
+              ctx?.drawImage(firstBackground,0,-(this._scrollHeight%VIEWPORT_H)); //by the time the second screen is loaded, the first should already be loaded (server works sequentially)
+              ctx?.drawImage(secondBackground,0,VIEWPORT_H-(this._scrollHeight%VIEWPORT_H));
+            }
+          }
+          else{
+            firstBackground.onload = () => {
+              ctx?.clearRect(0,0,this._canvas.current?.width || 0, VIEWPORT_H || 0);    
+              ctx?.drawImage(firstBackground,0,-(this._scrollHeight%VIEWPORT_H)); 
+            }
+          }
       }
       catch{};
-  
-      secondBackground.onload = () => {
-        if(ctx !== null){
-          ctx?.clearRect(0,0,this._canvas.current?.width || 0, this._canvas.current?.height || 0);
-          ctx.drawImage(firstBackground,0,-(this._scrollHeight%720));
-          ctx.drawImage(secondBackground,0,720-(this._scrollHeight%720));
-        }
-      }
     }
   }
 
@@ -132,8 +138,8 @@ class StreamWindow extends Component<any, any> {
     ref={this._canvas}
     tabIndex={1}
     style={{width:100+'%', height: 75+"vh"}}
-    width={1280+"px"}
-    height={720+"px"}/>
+    width={VIEWPORT_W+"px"}
+    height={VIEWPORT_H+"px"}/>
   }
 }
 

@@ -59,7 +59,7 @@ class BrowserSession {
 
 	private async _requestScreenshot(message: types.WSMessage<{screenNumber: number}>): Promise<void>{
 		if(this._browser !== null && this._browser.isConnected()){
-			this._currentPage.screenshot({type: 'jpeg', clip:{x: 0, y:message.payload.screenNumber*720, width: 1280, height: 720}, fullPage: true})
+			this._currentPage.screenshot({type: 'jpeg', quality: 20, clip:{x: 0, y:message.payload.screenNumber*720, width: 1280, height: 720}, fullPage: true})
 				.then(buffer => {
 					this._signalCompletion(message,this._streamingChannel);
 					this._streamingChannel.send(buffer);

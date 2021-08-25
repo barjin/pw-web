@@ -239,7 +239,7 @@ class SelectorGenerator{
             + "\")"
         }
 
-        return innerText ? element.tagName + innerText : `${this.GetSelectorSemantic(element.parentElement)} > ${element.tagName}`;
+        return innerText ? element.tagName + innerText.replace(/([\n\r]|\r\n)/gm, " ") : `${this.GetSelectorSemantic(element.parentElement)} > ${element.tagName}`;
     }
 }
 
