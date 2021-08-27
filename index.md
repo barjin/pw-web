@@ -8,6 +8,5 @@
     - [Technical Design](./analysis/design.md#technical-design)
 
 ### Documentation
-- Technical documentation
-	- [Server-Client API](./documentation/api.md)
+- [Technical documentation](./documentation/devdocs.md)
 - [User Documentation](./documentation/userdocumentation.md)

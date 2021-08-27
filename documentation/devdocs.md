@@ -1,5 +1,6 @@
 # Developer documentation
-On the following pages, all major classes and functions from both frontend and backend part of the app are documented.
+On the following pages, all major classes and functions from both frontend and backend part of the app are documented. 
+API documentation included [here](./api.md).
 
 ## Table of contents
 
