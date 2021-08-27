@@ -13,7 +13,13 @@ interface IRecordingsTableState {
     recordings: {id: number, name: string, createdOn: string}[]
 }
 
+/**
+ * React class component representing the main menu recordings table.
+ */
 class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
+    /**
+     * The table column headers.
+     */
     columns : String[] = ["Name", "", "Modified on"];
 
     constructor(props : IEmpty){
@@ -24,6 +30,11 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
         };
     }
 
+    /**
+     * Helper method for simple recordings reload.
+     * 
+     * Sends a GET request to the REST API, updates React state accordingly.
+     */
     loadRecordings = () : void => {
         this.setState({loading: true});
         getAPI("recordings").then(recordings => {
@@ -42,36 +53,45 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
     componentDidMount(){
         this.loadRecordings();
     }
-    
-    private _resolvePostResponse = (response: {ok: boolean, data?: object}) => {
-        if(response.ok){
-            this.loadRecordings();
-        }
-        else{
-            alert(response.data);
-        }
-    }
 
+    /**
+     * Rename button callback method.
+     * 
+     * Prompts the user for the new recording's name, then sends a POST request to the according REST API endpoint. If successful, reloads the table's content.
+     * @param {number} recordingId - ID of the recording being renamed
+     */
     renameRecording = (recordingId : number) => {
         let newName = prompt("Enter new recording name...");
         if(newName !== null){
             postAPI("renameRecording", {id: recordingId, newName : newName})
-            .then(this._resolvePostResponse);
+            .then(this.loadRecordings).catch(alert);
         }
     }
 
+    /**
+     * New recording button callback method.
+     * 
+     * Prompts the user for the new recording's name, then sends a POST request to the according REST API endpoint. If successful, reloads the table's content.
+     * @returns {void}
+     */
     addNewRecording(){
         let name = prompt("Enter new recording name...");
         if(name !== null){
             postAPI("newRecording",{name: name})
-            .then(this._resolvePostResponse);
+            .then(this.loadRecordings).catch(alert);
         }
     }
 
+    /**
+     * Delete button callback method.
+     * 
+     * Asks the user to confirm their decision, then sends a POST request to the according REST API endpoint. If successful, reloads the table's content.
+     * @param {number} recordingId - ID of the recording being deleted
+     */
     deleteRecording = (recordingId: number) => {
         if(window.confirm("Do you really want to delete this recording?")){
             postAPI("deleteRecording",{id: recordingId})
-            .then(this._resolvePostResponse);
+            .then(this.loadRecordings).catch(alert);
         }
     }
 
@@ -126,7 +146,11 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
 
 }
 
-export default function HomeScreen() { 
+/**
+ * Home Screen functional React component.
+ * @returns The homescreen being rendered.
+ */
+function HomeScreen() { 
     return (
       <div className="App">
         <Container fluid>
@@ -144,3 +168,5 @@ export default function HomeScreen() {
       </div>
     );
   }
+
+  export {HomeScreen}

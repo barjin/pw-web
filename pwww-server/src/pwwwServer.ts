@@ -1,17 +1,28 @@
 const yargs = require('yargs')
 const { hideBin } = require('yargs/helpers')
 
-import WSChannel from './wsChannel';
-import BrowserSession from './browserSession';
-import HTTPServer from './http-server/server_v2.js';
+import {BrowserSession} from './browserSession';
+import {HTTPServer} from './http-server/server_v2.js';
 import crypto from 'crypto';
 
-import ws, { Server, ServerOptions } from 'ws';
+import ws, { Server } from 'ws';
 
+/**
+ * Main server class, manages browser sessions, runs the HTTP server.
+ */
 class PWWWServer {
+	/**
+	 * Websockets server handling the textual (JSON) commands from the client.
+	 */
 	cmdServer : Server;
+	/**
+	 * Websockets server handling the binary data transfer (mostly image screencast).
+	 */
 	streamServer: Server;
 
+	/**
+	 * List of active sessions, along with their WS connections and tokens.
+	 */
 	sessions : {
 		cmdConn : ws, 
 		streamConn: ws, 
@@ -19,11 +30,23 @@ class PWWWServer {
 		browserSession : BrowserSession
 	}[] = [];
 
+	/**
+	 * Helper method to signalize error over given WS connection and close it.
+	 * @param conn WS connection object
+	 */
 	private errorAndClose(conn: ws){
 		conn.send(JSON.stringify({"error":true}));
 		conn.close();
 	}
 
+	/**
+	 * Constructor for the PWWWServer class
+	 * 
+	 * Opens WS servers, spawns and starts an instance of HTTPServer, binds the event listeners to the WS connections (handles browser session management, pairs CMD/stream channels using tokens).
+	 * @param messagePort (number) - port for the WS message channels
+	 * @param streamPort (number) - port for the WS stream channels
+	 * @param httpPort (number) - port for the HTTP server (serves web app and REST API)
+	 */
 	constructor(messagePort, streamPort, httpPort){
 		this.cmdServer = new ws.Server({port: messagePort});
 		this.streamServer = new ws.Server({port: streamPort});

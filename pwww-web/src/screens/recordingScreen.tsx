@@ -3,12 +3,12 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import {Component, createRef} from 'react';
 
-import ToolBar from '../components/toolbar';
-import SideBar from '../components/side_bar';
+import {ToolBar} from '../components/toolbar';
+import {SideBar} from '../components/side_bar';
 
 import querystring from 'querystring';
 
-import ACKChannel from '../ACKChannel';
+import {ACKChannel} from '../ACKChannel';
 import * as types from 'pwww-shared/types';
 import {getAPI, postAPI} from '../restAPI';
 
@@ -18,11 +18,31 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 const VIEWPORT_W = 1280;
 const VIEWPORT_H = 720;
 
+/**
+ * React component containing the canvas with the streamed browser environment.
+ * 
+ * Contains all the rendering methods as well as some scrolling logic. 
+ */
 class StreamWindow extends Component<any, any> {
+  /**
+   * React Reference to the actual HTML canvas element acting as the browser main window.
+   */
   private _canvas : React.RefObject<HTMLCanvasElement>;
+  /**
+   * Callback function for passing the canvas targetted actions (clicking, screenshots) to the handlers higher up.
+   */
   private _actionSender : (...args: any[]) => Promise<void>;
+  /**
+   * Callback function for requesting new screen tiles - used with the scrolling functionality, not connected to the recordable "screenshot" action.
+   */
   private _requestScreenshot : (screenNumber: number) => void;
+  /**
+   * Current distance scrolled (in the vertical direction).
+   */
   private _scrollHeight : number = 0;
+  /**
+   * Array of screen tiles - updated dynamically as the user scrolls to save some bandwidth as well as some extra horsepower.
+   */
   private _screenBuffer : Blob[] = [new Blob([])];
   
   constructor(props: {actionSender : (actionType: types.BrowserAction, data: object) => Promise<void>, screenRequester: (screenNumber: number) => void}){
@@ -33,6 +53,11 @@ class StreamWindow extends Component<any, any> {
     this._requestScreenshot = props.screenRequester;
   }
 
+  /**
+   * Canvas click handler using basic geometry to map the current click position (takes care of the scroll height calculations) to the VIEWPORT_H, VIEWPORT_W space (correspoding to the Playwright's browser window size)
+   * @param {MouseEvent} ev - Click event
+   * @returns The remapped coordinates of the current click.
+   */
   private getClickPos = (ev : MouseEvent) => {
     if(this._canvas.current){
       let canvasPos = this._canvas.current.getBoundingClientRect();
@@ -46,13 +71,20 @@ class StreamWindow extends Component<any, any> {
     }
   }
 
-  addScreen(idx: number, data: Blob) : void{
+  /**
+   * "Setter" function for the internal sceen buffer.
+   * @param {number} idx - Index of the new screen being added.
+   * @param {Blob} data - Binary image data of the new screen.
+   */
+  public addScreen(idx: number, data: Blob) : void{
     this._screenBuffer[idx] = data;
     this._flushBuffer();
   }
 
-  resetView(): void {
-    // setter for external buffer access. resets the viewport (in most cases mimics the default browser behaviour e.g after browsing... perhaps would use some more finesse)
+  /**
+   * Clears the screen buffer array and resets the scroll height to 0.
+   */
+  public resetView(): void {
     this._scrollHeight = 0;
     this._screenBuffer = [];
   }
@@ -99,7 +131,11 @@ class StreamWindow extends Component<any, any> {
     }
   }
 
-  
+  /**
+   * Internal method for flushing the current state of the image buffer to the screen. 
+   * 
+   * Checks whether the images are loaded, uses the current scroll height and optimizes the rendering process.
+   */
   private _flushBuffer = () => {
     if(this._canvas.current){
       let ctx = this._canvas.current.getContext('2d');
@@ -154,16 +190,55 @@ interface IRecScreenState {
   TabState: types.AppState["TabState"]
 }
 
+/**
+ * Top-level React Component encompassing all the other components at the Recording Screen.
+ */
 class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
+  /**
+   * React Router location (used for accessing the query part of the url, hostname etc.)
+   */
   location: any;
+  /**
+   * React ref to the current StreamWindow.
+   * 
+   * Useful for calling the non-react functions of the current StreamWindow from this component.
+  */
   private _canvas : React.RefObject<StreamWindow>;
+  /**
+   * WebSockets connection for sending the textual commands to the server.
+   */
   private _messageChannel : ACKChannel|null = null;
+  /**
+   * WebSockets connection for image data transfer.
+   */
   private _streamChannel : ACKChannel|null = null;
   
+  /**
+   * Boolean flag for stopping the playback.
+   * 
+   * If set true, the asynchronous recording playback will stop (and set the flag back to false).
+   */
   private _stopSignal : boolean = false;
+
+  /**
+   * Resolve function of the _stepper() generated Promise.
+   * 
+   * Once called, the stepper promise gets resolved and the playback moves one step forward (if running in the step mode, noop otherwise).
+   */
   private _step : Function = () => {};
 
+  /**
+   * Stores current expected screen tile id.
+   * 
+   * Set after the "screenshot response" message, the next binary streamChannel message will contain this id's screenshot.
+   */
   private currentScreencastRequestIdx: number = 0;
+
+  /**
+   * Stores ids of already requested screen tiles. 
+   * 
+   * Used for optimization (eliminating double requests - quite important when binding the requester on the wheel event, which fires rapidly).
+   */
   private requestedScreens : number[] = [];
 
   constructor(props : IRecScreenProps){  
@@ -188,6 +263,9 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     }
   }
 
+  /**
+   * Bootstrapping method for starting all the necessary connections and binding the event handlers.
+   */
   private _streamSetup = () => {
     const _broadcastMsgHandler = (data : Blob) => {
       let obj = JSON.parse(data as any);
@@ -215,8 +293,11 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     });
   }
 
+  /**
+   * Handles mostly REST API communication (downloading the recording, initializing the state).
+   */
   componentDidMount(){
-    // REST API communication (downloading the recording, initializing the state)
+    
     this.setState({loading: true});
 
     let query = querystring.parse(this.location.search.slice(1));
@@ -245,8 +326,13 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
 
     console.log(this.state);
   }
-
-  requestScreenshot = (screenNumber: number) : void => {
+ 
+ /**
+ * Helper function for sending the screenshot requests to the server over the corresponding WS channel.
+ * Checks whether the requested screenshot has been requested before - in that case, this new request is discarded. Otherwise the request is made and handled further.
+ * @param {number} screenNumber - Number of the currently requested screen.
+ */
+  private _requestScreenshot = (screenNumber: number) : void => {
     if(this.requestedScreens.includes(screenNumber)){
       return;
     }
@@ -256,16 +342,28 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
       .catch(console.error);
   }
 
+  /**
+   * Clears the internal screen buffer and requests first two screens on the page.
+   * @returns IIFE-style function to be called when complete rerendering is required.
+   */
   private _initRender(){
       return (() => {
       this._canvas.current?.resetView();
       this.requestedScreens = [];
-      this.requestScreenshot(0);
-      this.requestScreenshot(1);
+      this._requestScreenshot(0);
+      this._requestScreenshot(1);
       });
   }
 
-  requestAction = (actionType: types.BrowserAction, data: object) => {
+  /**
+   * Helper method to facilitate client->server requests and recording mechanism.
+   * 
+   * Requests the specified action via the messagingChannel (ACK channel), if the recording session is active, the action gets recorded.
+   * @param {types.BrowserAction} actionType - Type (defined in the types.BrowserAction enum) of the requested action.
+   * @param {object} data - Object with the action-type-dependent data.
+   * @returns Promise gets resolved when the Action is executed (on the server) and the browser view is rerendered. Might throw (reject response) when there is a problem with the action execution.
+   */
+  private _requestAction = (actionType: types.BrowserAction, data: object) => {
     return this._messageChannel?.request({type: types.BrowserAction[actionType], data: data})
     .then(responseMessage => {
       if(this.state.RecordingState.isRecording){
@@ -287,19 +385,32 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     // does not catch just yet (just a communication channel, errors should be handled by the requesters!)
   }
 
+  /**
+   * "Hacky" solution for stopping the playback.
+   * @returns The promise gets normaly immediately resolved, when the class member _stopSignal is set, the promise gets rejected (which then disables the playback).
+   */
   private _stop = () => {
     return new Promise<void>((res,rej) => {
       if(this._stopSignal) rej({errorMessage:"Execution stopped by user."}); else res();
     });
   }
 
+  /**
+   * "Hacky" solution for the playback "Step" functionality.
+   * @returns The promise's resolve function is exposed as a private class member _step, pressing the "Next Step button" calls this function, resulting in the Promise getting resolved and the playback resumed.
+   */
   private _stepper = () => {
     return new Promise<void>((res) => {
       this._step = res;
     })
   }
 
-  playRecording = (step : boolean = false) : Promise<void> => {
+  /**
+   * Starts the playback session.
+   * @param {boolean} step - If true, the playback will wait for the _stepper() promise to resolve with every action (next step button click). 
+   * @returns Gets resolved after the recording has ended (rejected if there was an error during the playback).
+   */
+  private _playRecording = (step : boolean = false) : Promise<void> => {
     this.setState(prevState => (
       {
         RecordingState:{
@@ -357,18 +468,25 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
     return Promise.resolve();
   }
 
-  insertText = () => {
+  /**
+   * Prompts the user for the text to paste to the website, then requests an insertText action.
+   */
+  private _insertText = () => {
     let text = prompt("Enter text to paste to the website:");
     if(text !== null && text !== ""){
-      this.requestAction(types.BrowserAction.insertText, {text: text});
+      this._requestAction(types.BrowserAction.insertText, {text: text});
     }
   }
 
-  recordingControl = (action : string) => {
+  /**
+   * "Router" method (used mainly as a callback in child components) for the playback/recording control.
+   * @param {string} action - Type of the requested action (play|record|step|stop).
+   */
+  private _recordingControl = (action : string) => {
     switch (action) {
       case 'play':
           if(window.confirm("Starting the playback closes all open tabs. Do you want to proceed?")){
-            this.playRecording().catch(() => {});
+            this._playRecording().catch(() => {});
           }
         break;
       case 'record':
@@ -384,7 +502,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
             postAPI("updateRecording",this.state.RecordingState.recording).catch(console.log);
           }
 
-          (!this.state.RecordingState.isRecording ? this.playRecording() : Promise.resolve()).then( () =>
+          (!this.state.RecordingState.isRecording ? this._playRecording() : Promise.resolve()).then( () =>
           this.setState(prevState => (
             {
               RecordingState: {
@@ -398,7 +516,7 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
           this._step();
         }
         else{
-          this.playRecording(true).catch(()=>{});
+          this._playRecording(true).catch(()=>{});
         }
         
         break;
@@ -408,11 +526,16 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
         this.setState((prevState) => ({RecordingState:{...prevState.RecordingState, playbackError: "", currentActionIdx: -1}}));
         break;
       default:
-        break;
+        throw new Error(`Unrecognized action ${action}!`);
     }
   }
 
-  recordingModifier : types.RecordingModifier = {
+  /**
+   * Container object with recording modifier functions (used to pass the modifiers to the child components while still storing the state at the top level)
+   * 
+   * As of now, this object contains "deleteBlock", "updateBlock", "rearrangeBlocks" and "pushCustomBlock".
+   */
+  private _recordingModifier : types.RecordingModifier = {
     this: this,
     deleteBlock: function (idx: number){
         this.this.setState((prevState : types.AppState) => (
@@ -506,14 +629,14 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
           <Row style={{height:90+'vh'}}>
               <>
               <Col xs={3}>
-                <SideBar recordingState={this.state.RecordingState} control={this.recordingControl} recordingModifier={this.recordingModifier}/>
+                <SideBar recordingState={this.state.RecordingState} control={this._recordingControl} recordingModifier={this._recordingModifier}/>
               </Col>
               <Col xs={9}>
                 <Container fluid>
-                <ToolBar tabState={this.state.TabState} navigationCallback={this.requestAction} />
-                <a href="#" onClick={this.insertText}>Insert Text</a>
+                <ToolBar tabState={this.state.TabState} navigationCallback={this._requestAction} />
+                <a href="#" onClick={this._insertText}>Insert Text</a>
                 <Row>
-                  <StreamWindow ref={this._canvas} actionSender={this.requestAction} screenRequester={this.requestScreenshot}/>
+                  <StreamWindow ref={this._canvas} actionSender={this._requestAction} screenRequester={this._requestScreenshot}/>
                 </Row>
                 </Container>
               </Col>
@@ -526,4 +649,4 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
   }
 }
 
-export default RecordingScreen;
+export {RecordingScreen};

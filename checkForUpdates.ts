@@ -60,7 +60,7 @@ async function main(){
           // nightly.link itself does not always serve the newest artifact, therefore checking through Github REST API
           const downloadURL = `https://nightly.link/barjin/pw-web/actions/artifacts/${latestArtifact.id}.zip`;
 
-          // child_process.exec is probably not the cleanest solution, but very simple (requires wget and unzip, but that's fine with Docker)
+          // child_process.exec is probably not the cleanest solution, but very simple (requires wget and unzip, but that's fine with the currently used Docker Alpine image)
           exec(`wget -O ${zipName} ${downloadURL}`, ()=>{});
           process.exitCode = 1; // terrible, downloading new version is not an error... but whatever :)
         }
@@ -70,7 +70,7 @@ async function main(){
       })
     })
     .catch((e) => {
-      console.log(`Something went wrong :( ${e}`);
+      console.log(`An unexpected error occured :( ${e}`);
     });
 }
 

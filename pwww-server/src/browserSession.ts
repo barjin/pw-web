@@ -5,35 +5,74 @@ import type { Browser } from '../playwright/src/client/browser';
 
 import * as types from 'pwww-shared/types';
 
-import TabManager from './tabManager';
+import {TabManager} from './tabManager';
 import ws from 'ws';
 
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Main browser session class.
+ * 
+ * Holds the active browser session (Playwright's "Browser" object) and both WS connections. Exposes functions for action scheduling and other manipulation with the internal browser.
+ */
 class BrowserSession {
+	/**
+	 * Stores the internal Playwright Browser session.
+	 */
 	private _browser : Browser = null;
+	/**
+	 * Handles tab and context management and page bootstrapping.
+	 */
 	private _tabManager : TabManager;
 
+	/**
+	 * Stores pending tasks, used for task execution serialization.
+	 */
 	private _messageQueue : types.WSMessage<types.Action>[] = [];
+	/**
+	 * Sets the minimal delay between two different tasks being executed.
+	 * 
+	 * Setting this to `null` disables additional delay (task execution will still wait for stable DOM state before executing next task).
+	 */
 	private _playbackDelay : number = 1000;
 
+	/**
+	 * Websockets connection used for signalling and action scheduling.
+	 */
 	private _messagingChannel : ws;
+
+	/**
+	 * Websockets connection used for image data requests / transfer. 
+	*/
 	private _streamingChannel : ws;
 
+	/**
+	 * @summary BrowserSession constructor
+	 * @description Stores given WS connections and binds the message event callbacks for both of them.
+	 * @param messagingChannel WS connection for handling text commands.
+	 * @param streamingChannel WS connection for handling image stream.
+	 */
 	constructor(messagingChannel : ws, streamingChannel : ws){
 		this._messagingChannel = messagingChannel;
 		this._streamingChannel = streamingChannel;
 
 		messagingChannel.on('message', (message: string) => this.enqueueTask(JSON.parse(message)));
-		streamingChannel.on('message', (message: string) => this._requestScreenshot(JSON.parse(message)));
-		// on close?		
+		streamingChannel.on('message', (message: string) => this._requestScreenshot(JSON.parse(message)));		
 	}
 
+	/**
+	 * Getter for extracting the current page (from the associated TabManager object) easily. 
+	 */
 	private get _currentPage() : Page {
 		return this._tabManager.currentPage;
 	}
 	
+	/**
+	 * Initializes the browser session, usually called at the very beginnning.
+	 * 
+	 * Spawns a new instance of the Chromium browser with a TabManager, binds all the necessary event listeners and opens a new (blank) tab - this also creates a new browser context.
+	 */
 	private async _initialize() : Promise<void> {
 		console.log("Initializing...");
 		this._browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ["--no-sandbox"] } : {});
@@ -51,12 +90,23 @@ class BrowserSession {
 		await this._tabManager.newTab();
 	};
 
-	private _sendToClient = (...data) => {
+	/**
+	 * Helper function for sending any number of string messages to the connected client (using the associated _messagingChannel)
+	 * 
+	 * @param data String array to be sent to the client
+	 */
+	private _sendToClient = (...data: string[]) => {
 		data.forEach(element => {
 			this._messagingChannel.send(element);
 		});
 	}
 
+	/**
+	 * Screenshot request handler - auto called by the web app (used mainly for scrolling functionality), not associated with the recordable screenshot action!
+	 * 
+	 * Reads the request message and tries to take a screenshot of the current webpage. If it succeeds, sends "completion response" to the client using the streaming connection, followed by the binary data with the screenshot itself. 
+	 * @param message WSMessage with the screenNumber (how many full "PageDowns" is the requested screen located)
+	 */
 	private async _requestScreenshot(message: types.WSMessage<{screenNumber: number}>): Promise<void>{
 		if(this._browser !== null && this._browser.isConnected()){
 			this._currentPage.screenshot({type: 'jpeg', quality: 20, clip:{x: 0, y:message.payload.screenNumber*720, width: 1280, height: 720}, fullPage: true})
@@ -71,18 +121,12 @@ class BrowserSession {
 		}
 	}
 
-	// private async sendScreenshot(options? : any) : Promise<void>{
-	// 	if(this._browser !== null && this._browser.isConnected()){
-	// 		this._currentPage.screenshot({'type': 'jpeg', ...options})
-	// 			.catch(() => console.log("dropping screenshot..."))
-	// 			.then((buffer: Buffer) => this._streamingChannel.send(buffer));
-				
-	// 	}
-	// 	else{
-	// 		console.error("[PWWW] Browser is not running, cannot send screenshot!");
-	// 	}
-	// }
-
+	/**
+	 * Helper function for error signalling during the message-related request.
+	 * @param message Initial request message
+	 * @param e Reason of the error
+	 * @param channel Optional, WS connection to send the message to. Default - messagingChannel.
+	 */
 	private _signalError(message : types.WSMessage<any>, e: string, channel : ws = this._messagingChannel) : void{
 		channel.send(JSON.stringify({
 			responseID: message.messageID,
@@ -91,12 +135,23 @@ class BrowserSession {
 		}));
 	}
 
+	/**
+	 * Helper function for signalling the completion of the message-related request.
+	 * @param message Initial request message
+	 * @param channel Optional, WS connection to send the message to. Default - messagingChannel.
+	 */
 	private _signalCompletion(message : types.WSMessage<any>, channel : ws = this._messagingChannel) : void{
 		channel.send(JSON.stringify({
 			responseID: message.messageID,
 			payload: message.payload}));
 	}
 
+	/**
+	 * Main action-executing method.
+	 * 
+	 * Takes the actions from the action queue and executes them according to the internal actionList - types.BrowserAction-keyed object with callback functions for values. 
+	 * If any of the action functions throws, the exception gets relayed to the client via _signalError.
+	 */
 	private async processTasks() : Promise<void>{
 		const actionList : {[key in keyof typeof types.BrowserAction] : ((task: types.Action) => Promise<types.Action>) } = {
 			'click' : 
@@ -253,6 +308,12 @@ class BrowserSession {
 		}
 	}
 
+	/**
+	 * Enqueues new actions (messagingChannel message listener).
+	 * 
+	 * Pushes the new messages into the messageQueue, checks if processTasks() is already running - if not, it starts the processing.
+	 * @param task - New task object
+	 */
 	public enqueueTask = ( task: types.WSMessage<types.Action> ) : void => {
 		this._messageQueue.push(task);
 		if(this._messageQueue.length === 1){
@@ -260,7 +321,12 @@ class BrowserSession {
 		}
 	}
 
+	/**
+	 * Public "destructor" for the browser session.
+	 * 
+	 * Closes the internal browser session, which allows for safe disposal of the BrowserSession object. Disposing the BrowserSession without calling close() beforehand causes a serious memory leak, as the Playwright Chromium subprocess continues to live indefinitely.
+	 */
 	public close : Function = () => {}; //gets assigned with browser creation
 }
 
-export default BrowserSession;
+export {BrowserSession};

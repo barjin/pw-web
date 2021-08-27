@@ -6,13 +6,29 @@ import * as types from 'pwww-shared/types';
 //     currentTab = 0;
 // }
 
+/**
+ * Escapes double quotes in the given string.
+ * @param input String to be escaped
+ * @returns String with all the double quotes prepended with a backslash.
+ */
 function escapeString(input: string) : string{
     return input.replace(/\"/g, "\\\"");
 }
 
+/**
+ * Base Transpiler class 
+ * 
+ * Used to generate executable JS code from an array of PWWW actions.
+ */
 class Transpiler {
+    /**
+     * Internal screenshot counter for generating unique filenames.
+     */
     screenshotID : number = 0;
 
+    /**
+     * Header of the generated file stored as a string.
+     */
     protected header = 
     `(async () => {
     const {firefox} = require('playwright');
@@ -21,6 +37,11 @@ class Transpiler {
     const page = await browser.newPage();
 `;
     
+/**
+ * Object with BrowserAction types for keys and string generating functions for values.
+ * 
+ * The functions accept action objects and use the action specific data to generate equivalent code.
+ */
     protected actions : {[key : string] : ((data: any) => string)}  = {
         'click' : (data) => `\tawait page.click("${escapeString(data.selector)}");`,
         'browse': (data) => `\tawait page.goto("${escapeString(data.url)}");`,
@@ -50,12 +71,20 @@ class Transpiler {
         }
     }
 
+    /**
+     * Ending of the generated file stored as a string.
+     */
     protected footer = 
     `
     browser.close();
 })();
 `;
 
+    /**
+     * The main transpiler method, returns transpiled code as a text/plain blob.
+     * @param recording Array of action "blocks"
+     * @returns The transpiled recording (.js source code) as a text/plain Blob .
+     */
     public translate(recording: types.Action[]) : Blob{
         let translationBuffer = [this.header];
         
@@ -72,6 +101,12 @@ class Transpiler {
         });
     }
 }
+
+/**
+ * Apify environment specific transpiler
+ * 
+ * Uses Apify-specific functions and environment variables (mainly) to faciliate storing output data on the Apify platform.
+ */
 class ApifyTranspiler extends Transpiler {
     screenshotID : number = 0;
 
@@ -126,6 +161,13 @@ this.footer = `
 });`
     }
 
+    /**
+     * Apify Platform specific implementation of the Transpiler.translate() method.
+     * 
+     * Logs https links to the taken screenshots for easier access.
+     * @param recording Recording, array of action blocks
+     * @returns The transpiled recording (.js source code) as a text/plain Blob.
+     */
     translate(recording: types.Action[]) : Blob{
         if(recording.filter(x => x.type as any === types.BrowserAction[types.BrowserAction.screenshot]).length){
             this.footer = 

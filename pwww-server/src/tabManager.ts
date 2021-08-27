@@ -2,26 +2,54 @@ const EventEmitter = require('events');
 import type { Browser } from '../playwright/src/client/browser';
 import type { Page } from '../playwright/src/client/page';
 
+/**
+ * Class for handling the browser tab management.
+ */
 class TabManager extends EventEmitter {
+    /**
+     * Associated Playwright Browser object.
+     */
     private _browser : Browser;
+    /**
+     * Functions or paths to scripts to be injected to every new page.
+     */
     private _injections : ({path:string}|Function)[] = [];
+    /**
+     * Playwright Page object exposing the currently selected page.
+     */
     public currentPage : Page;
 
+    /**
+     * Constructor for the TabManager class
+     * @param browser Sessions Playwright Browser object
+     */
     constructor(browser : Browser){
         super();
         this._browser = browser;
     }
 
+    /**
+     * Getter method for listing all the managed tabs (Playwright Page objects) in all contexts.
+     * @returns List of currently active tabs / pages.
+    */
     private get _pages() : Page[]{
 	    return this._browser.contexts()
 			.map(context => context.pages())
 			.reduce((acc,pages) => [...acc,...pages], [])
     }
 
+    /**
+     * Helper method for emiting the "tabsUpdate" event (listened to by BrowserSession) with the list of all tabs.
+    */
     private notifyStateChange() : void{
         this.emit("tabsUpdate", this.listAllTabs());
     }
 
+    /**
+     * Helper method to sideload scripts into a new page as well as bind some listeners and introduce the "tabName" member variable into the page (for easier tab name retrieval).
+     * @param page Current page to be bootstrapped.
+     * @returns Promise gets resolved after the given page is bootstrapped with the specified scripts.
+     */
     private async _pageBootstrapper(page : Page) : Promise<void>{
         page['tabName'] = "Loading...";
 
@@ -46,6 +74,10 @@ class TabManager extends EventEmitter {
         await page.reload(); 
     }
 
+    /**
+     * Gets the current state of the browser tabs (current tab id and list of tab titles).
+     * @returns List of open tabs and the current tab id.
+     */
     public listAllTabs() : any{
         let currentTab : number = -1;
 
@@ -61,6 +93,10 @@ class TabManager extends EventEmitter {
 		return {currentTab: currentTab, tabs: tabList};
 	}
 
+    /**
+     * Closes all the current browser contexts and opens up a blank page.
+     * @returns Promise gets resolved after the blank page is open.
+     */
     public async recycleContext() : Promise<void> {
         const contexts = this._browser.contexts();
         
@@ -71,6 +107,11 @@ class TabManager extends EventEmitter {
         await this.newTab();
     }
 
+    /**
+     * Opens up a new page in the last existing (running) context. If there is no running context, it gets created with some default options.
+     * @param url Optional - url to open the page with.
+     * @returns Promise gets resolved after the new page is open, bootstrapped and on the specified URL (if applicable).
+     */
 	public async newTab(url? : string) : Promise<void>{
         if(this._browser.contexts().length === 0){
             // For freshly created (or recycled) browser without context
@@ -89,6 +130,11 @@ class TabManager extends EventEmitter {
         }
 	}
 
+    /**
+     * Closes the specified page. Handles possible termination of the current page, changes current page id accordingly.
+     * @param idx id of the page to be closed (index in the _pages array) or the Page object itself.
+     * @returns Promise, gets resolved when the page is successfully closed.
+     */
     public async closeTab(idx: number | Page) : Promise<void>{
         if(typeof idx !== 'number'){
             idx = 
@@ -112,6 +158,11 @@ class TabManager extends EventEmitter {
         this.notifyStateChange();
     }
 
+    /**
+     * Injects the specified function/script to all the active pages, stores it in the _injections array for the future pages (to be used during bootstrapping).
+     * @param arg Function (or path to the script file) to be injected
+     * @returns Promise, gets resolved when all the existing pages have been reloaded with the new script injected.
+     */
     // The argument is either a JS function or an object with a path to a script (see documentation of Page.addInitScript)
     // Once registered, the injected script survives reloads and navigation.
     public async injectToAll(arg: (Function|{path: string})) : Promise<void>{
@@ -123,6 +174,10 @@ class TabManager extends EventEmitter {
         }
     }
 
+    /**
+     * Changes the currentPage.
+     * @param newTab index of the new tab in the _pages array
+     */
     // switchTabs does not have to be async, since Playwright internally does not 'switch' tabs,
     //  and the switching mechanism is solely user-side.
     public switchTabs(newTab: number) : void{
@@ -130,8 +185,6 @@ class TabManager extends EventEmitter {
 
         this.notifyStateChange();
     }
-
-
 }
 
-export default TabManager;
+export {TabManager};

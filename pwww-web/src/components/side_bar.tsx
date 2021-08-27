@@ -24,13 +24,28 @@ import {saveAs} from 'file-saver'
 import * as types from 'pwww-shared/types';
 import {useRef, useEffect, useState, DragEvent, DragEventHandler, MouseEventHandler } from 'react';
 
-type SideBarProps = {
-  control : (action: string) => void,
-  recordingModifier : types.RecordingModifier,
+
+interface IDownloadModalProps {
+  /**
+   * Determines whether the download modal is visible.
+   */
+  show: boolean,
+  /**
+   * Callback function, sets the modal visibility to `false` higher up.
+  */
+  closeSelf: () => void,
+  /**
+   * The current state of the recording (required for the code generation).
+   */
   recordingState: types.AppState["RecordingState"]
 }
 
-function DownloadModal(props : any) : JSX.Element{
+/**
+ * Recording Export/Download modal as a functional React component. 
+ * @param {object} props - Download modal props (mostly boolean show/hide and some necessary callbacks).
+ * @returns The rendered download modal.
+ */
+function DownloadModal(props : IDownloadModalProps) : JSX.Element{
   const [type, setType] = useState("apify");
   return(
     <Modal show={props.show} onHide={props.closeSelf}>
@@ -78,6 +93,17 @@ function DownloadModal(props : any) : JSX.Element{
   )
 }
 
+type SideBarProps = {
+  control : (action: string) => void,
+  recordingModifier : types.RecordingModifier,
+  recordingState: types.AppState["RecordingState"]
+}
+
+/**
+ * Side bar as a functional React component. 
+ * @param {SideBarProps} props - React props object containing current recording state (which is being stored higher up), recording modifiers and recording control callback.
+ * @returns The rendered sidebar.
+ */
 function SideBar(props : SideBarProps) : JSX.Element {
     const [downloadModal,setDownloadModal] = useState(false);
 
@@ -111,6 +137,11 @@ function SideBar(props : SideBarProps) : JSX.Element {
     );
 }
 
+/**
+ * Side bar as a functional React component. 
+ * @param {SideBarProps} props - React props object containing current recording state (which is being stored higher up), recording modifiers and recording control callback.
+ * @returns The rendered sidebar.
+ */
 function CodeList(props : { recordingState: SideBarProps['recordingState'], recordingModifier: SideBarProps["recordingModifier"] }) : JSX.Element {
   const ref = useRef(null);
 
@@ -130,20 +161,6 @@ function CodeList(props : { recordingState: SideBarProps['recordingState'], reco
     action={props.recordingState.recording.actions[editedID]}
     editAction={(updatedBlock: types.Action) => props.recordingModifier.updateBlock(editedID,updatedBlock)}
     />
-  {/* <Overlay target={ref.current} show={showInfo} placement="right">
-    <div
-      {...props}
-      style={{
-        backgroundColor: 'gray',
-        padding: '10px',
-        color: 'white',
-        width: '200px',
-        borderRadius: 3
-      }}
-    >
-      {props.recordingState.playbackError.split(",")[0]}
-    </div>
-</Overlay> */}
   {
   [...props.recordingState.recording.actions.map((action : types.Action, idx: number ) => (
     <CodeBlock
@@ -201,20 +218,58 @@ function CodeList(props : { recordingState: SideBarProps['recordingState'], reco
 
 const showAttrs = ["selector", "url", "currentTab", "closing", "text", "back", "code"];
 
+/**
+ * Single code block as a functional React component
+ * @param {CodeBlockProps} props - React props object contianing event handlers, as well as other code-block related data (action title, active indicator, error message etc.)
+ * @returns The rendered code block.
+ */
   function CodeBlock(props : {
+    /**
+     * Index of this block in the whole recording.
+     */
     idx: number,
+    /**
+     * The recorded action represented by this block
+     */
     action: types.Action,
+    /**
+     * During playback, this determines whether this block is being currently run.
+     */
     active: boolean,
+    /**
+     * In case of an error contains string with the error message.
+     */
     error: string
 
+    /**
+     * Drag start event handler
+     */
     dragStart: DragEventHandler,
+    /**
+     * Drag over event handler
+     */
     dragOver: DragEventHandler,
+    /**
+     * Drag drop event handler
+     */
     dragDrop: DragEventHandler,
 
+    /**
+     * Hover over the error explain button handler
+    */
     toggleInfo: MouseEventHandler<HTMLElement>,
+    /**
+     * Block editing handler.
+     */
     editBlock: MouseEventHandler<HTMLElement>,
+    /**
+     * Block removal handler.
+     */
     deleteBlock: MouseEventHandler<HTMLElement>,
 
+    /**
+     * React ref for scrolling the currently active action to view during playback.
+     */
     scrollRef: React.MutableRefObject<null>|null
   }){
 
@@ -260,11 +315,27 @@ const showAttrs = ["selector", "url", "currentTab", "closing", "text", "back", "
     </Alert>
     )
   }
-
+/**
+ * Modal for code block editing as a functional React component
+ * @param props React props object containing currently edited code block details etc.
+ * @returns The rendered modal.
+ */
   function CodeEditModal(props : {
+    /**
+     * Boolean value determining the visibility of the modal.
+     */
     showModal: boolean,
+    /**
+     * Callback function to set the modal's visibility to false.
+     */
     closeSelf: Function,
+    /**
+     * Callback function to edit the action higher up (where the recording is stored).
+     */
     editAction: Function,
+    /**
+     * Current action being edited.
+     */
     action: types.Action
   }){
 
@@ -307,4 +378,4 @@ const showAttrs = ["selector", "url", "currentTab", "closing", "text", "back", "
     )
   }
 
-  export default SideBar;
+  export {SideBar};
