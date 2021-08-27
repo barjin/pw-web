@@ -51,7 +51,14 @@ async function main(){
   await RequestMaker.makeRequest({path: '/repos/barjin/pw-web/actions/artifacts'})
     .then((buffer : Buffer) => {
       let listing = JSON.parse(buffer.toString());
-      let latestArtifact = listing['artifacts'][0];
+      if(listing['artifacts']){
+        var latestArtifact = listing['artifacts'][0];
+      }
+      else{
+        // if the artifacts field is missing from the JSON response, there should be at least an error message (might happen e.g. due to the API rate limits)
+        throw listing['message'];
+        process.exitCode = 2;
+      }
 
       fs.stat(path.join(__dirname, zipName), (error,stats) => {
         if(error || new Date(stats.mtime) < new Date(latestArtifact["updated_at"])){
