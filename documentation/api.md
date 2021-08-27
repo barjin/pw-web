@@ -87,7 +87,7 @@ The HTTP part of the server, implemented in [Express.js](https://expressjs.com/)
 # Executor API over WebSockets
 PWWW server uses *WebSockets* to transmit user actions and screencast between client and server. It utilizes two distinct WS channels (is listening on two ports) to separate binary image screencast data (default port 8081) and textual commands and state updates (default port 8080).
 ## Basics
-Server part of the application uses helper class WSChannel, which simplifies WebSockets management. This class allows only one active connection per server, rejecting all other connection attempts.
+Server part of the application uses simple logic to manage active browser sessions using the active WebSocket connections. By default, maximum of 5 simultaneous active browser sessions is allowed, this can be overriden by setting the enviroment variable PWWW_MAX_SESSIONS to a different value.
 
 Client part (React App) uses standard inbuilt WebSocket API (class WebSocket).
 ## Recognized commands
