@@ -34,7 +34,8 @@ class Transpiler {
     const {firefox} = require('playwright');
     const fs = require('fs');
     const browser = await firefox.launch({headless: false}); //headful for testing purposes, can be switched
-    const page = await browser.newPage();
+    const context = await browser.newContext({locale: 'en-GB'});
+    const page = await context.newPage();
 `;
     
 /**
@@ -119,7 +120,8 @@ const { log } = Apify.utils;
 const { APIFY_DEFAULT_KEY_VALUE_STORE_ID } = process.env;
 Apify.main(async () => {
     const browser = await Apify.launchPlaywright();
-    const page = await browser.newPage();
+    const context = await browser.newContext({locale: 'en-GB'});
+    const page = await context.newPage();
 `;
         
         Object.keys(this.actions).map(key => {
