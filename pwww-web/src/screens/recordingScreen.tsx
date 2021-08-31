@@ -381,8 +381,12 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
         ));
       };
     })
-    .then(this._initRender());
-    // does not catch just yet (just a communication channel, errors should be handled by the requesters!)
+    .then(this._initRender())
+    .catch((e) => {
+      alert(`Action failed.\n\n` + (e.errorMessage ? `Reason: ${e.errorMessage.split("\n")[0]}` : ""));
+      throw(e); // throwing again (just a communication channel, errors should be handled by the requesters!)
+    })
+    
   }
 
   /**

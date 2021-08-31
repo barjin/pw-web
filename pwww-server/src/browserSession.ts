@@ -7,6 +7,7 @@ import * as types from 'pwww-shared/types';
 
 import {TabManager} from './tabManager';
 import ws from 'ws';
+import { createSemanticDiagnosticsBuilderProgram } from 'typescript';
 
 const fs = require('fs');
 const path = require('path');
@@ -158,10 +159,15 @@ class BrowserSession {
                 (async (task) => {
 					if(!task.data.selector){
 						try{
-							task.data.selector = (await this._currentPage.evaluate(([click]) => {
+							let selectorObj = (await this._currentPage.evaluate(([click]) => {
 								const generator = new window["SelectorGenerator"]();
 								return generator.getNodeInfo(generator.grabElementFromPoint(click.x, click.y));
-							},[task.data])).semanticalSelector;
+							},[task.data]));
+							if(selectorObj.error){
+								throw(selectorObj.error);
+							}
+							
+							task.data.selector = selectorObj.semanticalSelector;
 						}
 						catch(e){
 							console.error(e);

@@ -141,7 +141,10 @@ class SelectorGenerator{
      * @param element DOM tree node being analysed.
      * @returns Object containing all the available data about the input Node.
      */
-    getNodeInfo(element: Node) : {tagName: string, semanticalSelector: string, structuralSelector: string}{
+    getNodeInfo(element: Node) : {tagName: string, semanticalSelector: string, structuralSelector: string} | {error: string}{
+        if(!element){
+            return {error: "This element is null. Try executing the action again, or use different approach."};
+        }
         if(!(element instanceof HTMLElement)){
             console.error(`Watch out! Cannot generate selector for ${(element as any).constructor.name}, trying parent...`);
             return this.getNodeInfo(element.parentElement);
