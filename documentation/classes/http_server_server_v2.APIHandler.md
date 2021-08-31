@@ -1,4 +1,4 @@
-[pwww-server](../README.md) / [Exports](../modules.md) / [http-server/server_v2](../modules/http_server_server_v2.md) / APIHandler
+[pwww-server](../devdocs.md) / [Exports](../devdocs.md) / [http-server/server_v2](../modules/http_server_server_v2.md) / APIHandler
 
 # Class: APIHandler
 

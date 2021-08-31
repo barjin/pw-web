@@ -1,4 +1,4 @@
-[pwww-web](../README.md) / [Exports](../modules.md) / screens/homeScreen
+[pwww-web](../devdocs.md) / [Exports](../devdocs.md) / screens/homeScreen
 
 # Module: screens/homeScreen
 

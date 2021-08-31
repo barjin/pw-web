@@ -1,4 +1,4 @@
-[pwww-server](../README.md) / [Exports](../modules.md) / [extractSelector](../modules/extractSelector.md) / SelectorGenerator
+[pwww-server](../devdocs.md) / [Exports](../devdocs.md) / [extractSelector](../modules/extractSelector.md) / SelectorGenerator
 
 # Class: SelectorGenerator
 

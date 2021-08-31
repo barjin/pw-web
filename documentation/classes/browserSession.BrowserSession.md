@@ -1,4 +1,4 @@
-[pwww-server](../README.md) / [Exports](../modules.md) / [browserSession](../modules/browserSession.md) / BrowserSession
+[pwww-server](../devdocs.md) / [Exports](../devdocs.md) / [browserSession](../modules/browserSession.md) / BrowserSession
 
 # Class: BrowserSession
 

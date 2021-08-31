@@ -1,4 +1,4 @@
-[pwww-server](../README.md) / [Exports](../modules.md) / paths
+[pwww-server](../devdocs.md) / [Exports](../devdocs.md) / paths
 
 # Module: paths
 

@@ -1,4 +1,4 @@
-[pwww-web](../README.md) / [Exports](../modules.md) / [screens/recordingScreen](../modules/screens_recordingScreen.md) / RecordingScreen
+[pwww-web](../devdocs.md) / [Exports](../devdocs.md) / [screens/recordingScreen](../modules/screens_recordingScreen.md) / RecordingScreen
 
 # Class: RecordingScreen
 

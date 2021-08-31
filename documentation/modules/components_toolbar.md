@@ -1,4 +1,4 @@
-[pwww-web](../README.md) / [Exports](../modules.md) / components/toolbar
+[pwww-web](../devdocs.md) / [Exports](../devdocs.md) / components/toolbar
 
 # Module: components/toolbar
 

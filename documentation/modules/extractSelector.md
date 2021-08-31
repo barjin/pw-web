@@ -1,4 +1,4 @@
-[pwww-server](../README.md) / [Exports](../modules.md) / extractSelector
+[pwww-server](../devdocs.md) / [Exports](../devdocs.md) / extractSelector
 
 # Module: extractSelector
 

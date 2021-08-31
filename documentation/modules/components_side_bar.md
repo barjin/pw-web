@@ -1,4 +1,4 @@
-[pwww-web](../README.md) / [Exports](../modules.md) / components/side_bar
+[pwww-web](../devdocs.md) / [Exports](../devdocs.md) / components/side_bar
 
 # Module: components/side\_bar
 

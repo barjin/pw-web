@@ -1,4 +1,4 @@
-[pwww-web](../README.md) / [Exports](../modules.md) / [screens/homeScreen](../modules/screens_homeScreen.md) / RecordingsTable
+[pwww-web](../devdocs.md) / [Exports](../devdocs.md) / [screens/homeScreen](../modules/screens_homeScreen.md) / RecordingsTable
 
 # Class: RecordingsTable
 

@@ -1,4 +1,4 @@
-[pwww-server](../README.md) / [Exports](../modules.md) / [extractSelector](../modules/extractSelector.md) / CharType
+[pwww-server](../devdocs.md) / [Exports](../devdocs.md) / [extractSelector](../modules/extractSelector.md) / CharType
 
 # Enumeration: CharType
 

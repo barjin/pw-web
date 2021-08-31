@@ -1,4 +1,4 @@
-[pwww-server](../README.md) / [Exports](../modules.md) / [tabManager](../modules/tabManager.md) / TabManager
+[pwww-server](../devdocs.md) / [Exports](../devdocs.md) / [tabManager](../modules/tabManager.md) / TabManager
 
 # Class: TabManager
 

@@ -1,4 +1,4 @@
-[pwww-web](../README.md) / [Exports](../modules.md) / screens/recordingScreen
+[pwww-web](../devdocs.md) / [Exports](../devdocs.md) / screens/recordingScreen
 
 # Module: screens/recordingScreen
 

@@ -1,4 +1,4 @@
-[pwww-web](../README.md) / [Exports](../modules.md) / restAPI
+[pwww-web](../devdocs.md) / [Exports](../devdocs.md) / restAPI
 
 # Module: restAPI
 

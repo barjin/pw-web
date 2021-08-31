@@ -1,4 +1,4 @@
-[pwww-shared](../README.md) / [Exports](../modules.md) / ApifyTranspiler
+[pwww-shared](../devdocs.md) / [Exports](../devdocs.md) / ApifyTranspiler
 
 # Class: ApifyTranspiler
 
