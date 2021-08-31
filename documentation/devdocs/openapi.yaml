@@ -1,0 +1,208 @@
+openapi: "3.0.0"
+info:
+  description: "REST API documentation for PWWW - an intuitive web interface for Playwright."
+  version: "1.0.0"
+  title: "PWWW"
+  contact:
+    email: "jindrichbar@gmail.com"
+  license:
+    name: "MIT License"
+    url: "https://raw.githubusercontent.com/barjin/pw-web/development/LICENSE"
+
+servers:
+  - url: http://localhost:8000/api
+tags:
+- name: "GET requests"
+  description: "GET request endpoints"
+- name: "POST requests"
+  description: "POST request endpoints"
+  
+paths:
+  /recordings:
+    get:
+      tags:
+      - "GET requests"
+      description: Returns a list of available recordings.
+      responses:
+        '200':
+          description: "JSON response"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties: 
+                        id:
+                          type: integer
+                        name: 
+                          type: string
+                        createdOn:
+                          type: string
+  /recording:
+    get:
+      tags:
+      - "GET requests"
+      description: Returns the contents of the specified recording in JSON.
+      parameters:
+        - name: id
+          required: true
+          in: query
+          description: The requested recording's ID (to be found in the GET /recordings response).
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "JSON response"
+          content:
+            application/json:
+              schema:
+                oneOf: 
+                  - type: object
+                    properties:
+                      ok:
+                        type: boolean
+                        enum: [true]
+                      data:
+                        $ref: "#/components/schemas/Recording"
+                  - $ref: "#/components/schemas/ApiResultError"
+  /renameRecording:
+    post:
+      tags:
+      - "POST requests"
+      description: Renames the specified recording.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object 
+              properties:
+                id:
+                  type: integer
+                newName:
+                  type: string
+      responses:
+        '200':
+          description: "JSON response"
+          content:
+            application/json:
+              schema:
+                oneOf: 
+                  - type: object
+                    properties:
+                      ok:
+                        type: boolean
+                        enum: [true]
+                  - $ref: "#/components/schemas/ApiResultError"
+  /newRecording:
+    post:
+      tags:
+      - "POST requests"
+      description: Creates a new recording.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object 
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: "JSON response"
+          content:
+            application/json:
+              schema:
+                oneOf: 
+                  - type: object
+                    properties:
+                      ok:
+                        type: boolean
+                        enum: [true]
+                  - $ref: "#/components/schemas/ApiResultError"
+
+  /deleteRecording:
+    post:
+      tags:
+      - "POST requests"
+      description: Deletes a recording from the server.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object 
+              properties:
+                id:
+                  type: number
+      responses:
+        '200':
+          description: "JSON response"
+          content:
+            application/json:
+              schema:
+                oneOf: 
+                  - type: object
+                    properties:
+                      ok:
+                        type: boolean
+                        enum: [true]
+                  - $ref: "#/components/schemas/ApiResultError"
+  /updateRecording:
+    post:
+      tags:
+      - "POST requests"
+      description: Updates an existing recording (effectively saves a file of specified name - with given contents - to the server. The filename gets sanitized).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Recording"
+      responses:
+        '200':
+          description: "JSON response"
+          content:
+            application/json:
+              schema:
+                oneOf: 
+                  - type: object
+                    properties:
+                      ok:
+                        type: boolean
+                        enum: [true]
+                  - $ref: "#/components/schemas/ApiResultError"
+externalDocs:
+  description: "GitHub Repo"
+  url: "https://github.com/barjin/pw-web/"
+components:
+  schemas:
+    Recording:
+      type: object
+      properties: 
+        name:
+          type: string
+        actions: 
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              data:
+                type: object
+    ApiResultError:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          enum: [false]
+        data:
+          type: string
+          example: "Invalid ID!"
