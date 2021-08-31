@@ -171,6 +171,7 @@ class BrowserSession {
 						}
 						catch(e){
 							console.error(e);
+							throw new Error(e);
 						}
 						console.log(`Clicked on ${task.data.selector}`);
 					}
