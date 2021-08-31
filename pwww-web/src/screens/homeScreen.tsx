@@ -2,6 +2,9 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table'
+
+import Button from 'react-bootstrap/Button'
+import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import { Component } from 'react';
 
 import { postAPI, getAPI } from '../restAPI'
@@ -75,11 +78,9 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
      * @returns {void}
      */
     addNewRecording(){
-        let name = prompt("Enter new recording name...");
-        if(name !== null){
-            postAPI("newRecording",{name: name})
-            .then(this.loadRecordings).catch(alert);
-        }
+        let name : string = `recording_${new Date().valueOf()}`;
+        postAPI("newRecording",{name: name})
+        .then(this.loadRecordings).catch(alert);
     }
 
     /**
@@ -122,13 +123,15 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
                         <a href={"/recording?id=" + x.id}>{x.name}</a> 
                     </td>
                     <td>
-                        <ul>
+                        <ButtonGroup vertical>
+
+                        
                         {Object.entries(recordingActions).map(([key, value]) => 
                             {
-                                return <li><a href="#" onClick={()=>value(x.id)}>{key}</a></li>
+                                return <Button variant="outline-primary" onClick={()=>value(x.id)}>{key}</Button>
                             }
                         )}
-                        </ul>
+                        </ButtonGroup>
                     </td>
                     <td>{x.createdOn}</td>
                 </tr>
@@ -143,7 +146,22 @@ class RecordingsTable extends Component<IEmpty,IRecordingsTableState>{
             </Table>
         );
     }
+}
 
+function Footer(props: any) : JSX.Element{
+    return(
+        <Row {...props} style={{position: "fixed", bottom: "0px", left: "0px", width: "100%", backgroundColor: "#040404", padding: "10px"}}>
+                <Col>
+                    <a href="https://github.com/barjin/pw-web">GitHub</a>
+                </Col>
+                <Col>
+                    <a href="https://barjin.github.io/pw-web/">Documentation</a>
+                </Col>
+                <Col>
+                    <a href="mailto: jindrichbar@gmail.com">Contact me</a>
+                </Col>
+        </Row>
+    );
 }
 
 /**
@@ -165,6 +183,7 @@ function HomeScreen() {
                 </Col>
             </Row>
         </Container>
+        <Footer/>
       </div>
     );
   }

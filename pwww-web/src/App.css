@@ -36,3 +36,10 @@
     transform: rotate(360deg);
   }
 }
+
+.truncate {
+  width: [width];
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

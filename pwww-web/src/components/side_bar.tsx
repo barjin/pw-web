@@ -23,6 +23,7 @@ import {saveAs} from 'file-saver'
 
 import * as types from 'pwww-shared/types';
 import {useRef, useEffect, useState, DragEvent, DragEventHandler, MouseEventHandler } from 'react';
+import ButtonToolbar from 'react-bootstrap/esm/ButtonToolbar';
 
 
 interface IDownloadModalProps {
@@ -201,9 +202,7 @@ function CodeList(props : { recordingState: SideBarProps['recordingState'], reco
       }
 
       deleteBlock={() => {
-        if(window.confirm("Removing an action can lead to inconsistent recording. Do you want to proceed?")){
-          props.recordingModifier.deleteBlock(idx);
-        }
+        props.recordingModifier.deleteBlock(idx);
       }}
 
       scrollRef={props.recordingState.currentActionIdx === idx ? ref : null} //for auto scrolling
@@ -283,11 +282,10 @@ const showAttrs = ["selector", "url", "currentTab", "closing", "text", "back", "
     <Alert 
       draggable
       id={props.idx.toString()}
-      className={"codeBlock"}
+      className={"codeBlock truncate"}
 
       ref={props.scrollRef}
 
-      onDoubleClick={props.editBlock}
       onDragStart={props.dragStart}
       onDragOver={props.dragOver}
       onDrop={props.dragDrop}
@@ -306,7 +304,10 @@ const showAttrs = ["selector", "url", "currentTab", "closing", "text", "back", "
         </OverlayTrigger>
         ) : null}
       </Alert.Heading>
+      <ButtonToolbar>
+        <Button onClick={props.editBlock} variant="outline-primary">✏</Button>
         <Button onClick={props.deleteBlock} variant="outline-danger">❌</Button>
+        </ButtonToolbar>
       </div>
       <hr></hr>
       {
