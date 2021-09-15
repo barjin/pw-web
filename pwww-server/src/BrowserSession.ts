@@ -72,7 +72,7 @@ export default class BrowserSession {
  */
   private async initialize() : Promise<void> {
     console.log('Initializing...');
-    this.browser = <Browser>(await chromium.launch(process.env.CHROMIUMPATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] } : {}));
+    this.browser = <Browser>(await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] } : {}));
     this.close = (() => this.browser.close());
 
     this.tabManager = await new TabManager(this.browser);
