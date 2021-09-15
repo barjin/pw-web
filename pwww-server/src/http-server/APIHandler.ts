@@ -14,7 +14,7 @@ export default class APIHandler {
  * @param res - Express.js response object.
  * @param data - Data to be sent.
  */
-  private sendJSONData = (res, data : unknown) : void => {
+  private sendJSONData = (res:Response, data : unknown) : void => {
     res.json(
       {
         ok: true,
@@ -28,7 +28,7 @@ export default class APIHandler {
  * @param res - Express.js response object.
  * @param reason - Error object describing the error.
  */
-  private error = (res, reason:Error) : void => {
+  private error = (res:Response, reason:Error) : void => {
     res.json({
       ok: false,
       data: reason.message,
@@ -41,7 +41,7 @@ export default class APIHandler {
  * Sends list of the paths.savePath folder contents via HTTP (using given response object).
  * @param res - Express.js response object
  */
-  private listRecordings = (res) : void => {
+  private listRecordings = (res: Response) : void => {
     if (!fs.existsSync(paths.savePath)) {
       this.sendJSONData(res, []);
     } else {
@@ -63,21 +63,21 @@ export default class APIHandler {
  * @param req - Express.js request object
  * @param res - Express.js response object
  */
-  private getRecording = (req, res) : void => {
+  private getRecording = (req: Request, res: Response) : void => {
     if (!fs.existsSync(paths.savePath) || fs.readdirSync(paths.savePath).length === 0) {
       this.error(res, new Error('No recordings found!'));
       return;
     }
     if (req.query.id === undefined
 || Number.isNaN(req.query.id)
-|| req.query.id < 0
-|| req.query.id >= fs.readdirSync(paths.savePath).length) {
+|| parseInt(<string>req.query.id,10) < 0
+|| parseInt(<string>req.query.id,10) >= fs.readdirSync(paths.savePath).length) {
       this.error(res, new Error('Invalid ID!'));
       console.log(`${req.query.id} is not a valid recording ID!`);
       return;
     }
     try {
-      const filename = fs.readdirSync(paths.savePath)[req.query.id];
+      const filename = fs.readdirSync(paths.savePath)[parseInt(<string>req.query.id,10)];
       const fileContent : Record<string, unknown> = JSON.parse(fs.readFileSync(
         path.join(paths.savePath, filename),
       ).toString());
@@ -93,8 +93,8 @@ export default class APIHandler {
  * @param res - Express.js response object
  * @returns A callback function accepting error object (compliant with the async fs functions callback semantics).
  */
-  private postOKCallback(res) {
-    return (error) => {
+  private postOKCallback(res: Response) {
+    return (error:Error|null) => {
       if (error) {
         this.error(res, error);
       } else {
@@ -110,17 +110,17 @@ export default class APIHandler {
  * @param req - Express.js request object
  * @param res - Express.js response object
  */
-  private renameRecording(req, res) {
+  private renameRecording(req: Request, res: Response) {
     try {
       const filename = fs.readdirSync(paths.savePath)[req.body.id];
       if (fs.existsSync(path.join(paths.savePath, req.body.newName))) throw new Error('Name already in use.');
       fs.rename(
         path.join(paths.savePath, filename),
         path.join(paths.savePath, req.body.newName),
-        this.postOKCallback(res),
+        this.postOKCallback(res)
       );
     } catch (e) {
-      this.error(res, e);
+      this.error(res, <Error>e);
     }
   }
 
@@ -131,13 +131,13 @@ export default class APIHandler {
  * @param req - Express.js request object
  * @param res - Express.js response object
  */
-  private deleteRecording(req, res) {
+  private deleteRecording(req: Request, res: Response) {
     try {
       const filename = fs.readdirSync(paths.savePath)[req.body.id];
       if (!fs.existsSync(path.join(paths.savePath, filename))) throw new Error('This file does not exist.');
       fs.unlink(path.join(paths.savePath, filename), this.postOKCallback(res));
     } catch (e) {
-      this.error(res, e);
+      this.error(res, <Error>e);
     }
   }
 
@@ -148,7 +148,7 @@ export default class APIHandler {
  * @param req - Express.js request object
  * @param res - Express.js response object
  */
-  private newRecording(req, res) {
+  private newRecording(req: Request, res: Response) {
     try {
       const filenameSep = (req.body.name).split(/\/|\\/); // simple protection against ../../ paths
       const filename = filenameSep[filenameSep.length - 1];
@@ -156,7 +156,7 @@ export default class APIHandler {
       if (fs.existsSync(path.join(paths.savePath, filename))) throw new Error('Name already in use.');
       fs.writeFile(path.join(paths.savePath, filename), '[]', this.postOKCallback(res));
     } catch (e) {
-      this.error(res, e);
+      this.error(res, <Error>e);
     }
   }
 
@@ -167,13 +167,13 @@ export default class APIHandler {
  * @param req - Express.js request object
  * @param res - Express.js response object
  */
-  private updateRecording(req, res) {
+  private updateRecording(req: Request, res: Response) {
     try {
       const filenameSep = (req.body.name).split(/\/|\\/); // simple protection against ../../ paths
       const filename = filenameSep[filenameSep.length - 1];
       fs.writeFile(path.join(paths.savePath, filename), JSON.stringify(req.body.actions), this.postOKCallback(res));
     } catch (e) {
-      this.error(res, e);
+      this.error(res, <Error>e);
       console.error(e);
     }
   }

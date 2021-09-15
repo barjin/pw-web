@@ -27,9 +27,9 @@ class PWWWServer {
  */
   sessions : {
     cmdConn : ws,
-    streamConn: ws,
+    streamConn: ws|null,
     token: string,
-    browserSession : BrowserSession
+    browserSession : BrowserSession|null
   }[] = [];
 
   /**
@@ -50,7 +50,7 @@ class PWWWServer {
  * @param streamPort (number) - port for the WS stream channels
  * @param httpPort (number) - port for the HTTP server (serves web app and REST API)
  */
-  constructor(messagePort, streamPort, httpPort) {
+  constructor(messagePort: number, streamPort: number, httpPort: number) {
     this.cmdServer = new ws.Server({ port: messagePort });
     this.streamServer = new ws.Server({ port: streamPort });
     this.httpPort = httpPort;
@@ -79,7 +79,12 @@ class PWWWServer {
         conn.on('close', () => {
           this.sessions.forEach((session) => {
             if (session.token === token) {
-              session.browserSession.close();
+              if(session.browserSession){
+                session.browserSession.close();
+              }
+              else{
+                throw new Error('Cannot close BrowserSession, not running!');
+              }
             }
           });
 

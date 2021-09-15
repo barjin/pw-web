@@ -15,12 +15,12 @@ export default class BrowserSession {
 /**
  * Stores the internal Playwright Browser session.
  */
-  private browser : Browser = null;
+  private browser : Browser|null = null;
 
   /**
  * Handles tab and context management and page bootstrapping.
  */
-  private tabManager : TabManager;
+  private tabManager : TabManager|null = null;
 
   /**
  * Stores pending tasks, used for task execution serialization.
@@ -62,7 +62,13 @@ export default class BrowserSession {
  * Getter for extracting the current page (from the associated TabManager object) easily.
  */
   private get currentPage() : Page {
-    return this.tabManager.currentPage;
+    if(this.tabManager && this.tabManager.currentPage){
+      return this.tabManager.currentPage;
+    }
+    else{
+      throw new Error('The Tab Manager is not ready.');
+    }
+    
   }
 
   /**
@@ -73,7 +79,16 @@ export default class BrowserSession {
   private async initialize() : Promise<void> {
     console.log('Initializing...');
     this.browser = <Browser>(await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] } : {}));
-    this.close = (() => this.browser.close());
+    
+    this.close = (() => {
+      if(this.browser){
+        this.browser.close();
+      }
+      else{
+        throw new Error('Cannot close nonexistent browser!');
+      }
+    });
+    
 
     this.tabManager = await new TabManager(this.browser);
 
@@ -167,13 +182,13 @@ export default class BrowserSession {
         return generator.getNodeInfo(generator.grabElementFromPoint(click.x, click.y));
       }, [task.data]));
       if (selectorObj.error) {
-        throw (selectorObj.error);
+        throw new Error(selectorObj.error);
       }
 
       task.data.selector = selectorObj.semanticalSelector;
     } catch (e) {
       console.error(e);
-      throw new Error(e);
+      throw e;
     }
     console.log(`Clicked on ${task.data.selector}`);
   }
@@ -221,8 +236,14 @@ async (task) => {
     new Promise((_, rej) => setTimeout(() => {
       if (error) {
         rej({ message: 'Custom code block timeout, reloading page...' });
-        this.tabManager.closeTab(this.currentPage);
-        this.tabManager.newTab(url);
+        if(this.tabManager){
+          this.tabManager.closeTab(this.currentPage);
+          this.tabManager.newTab(url);
+        }
+        else{
+          throw new Error("Missing instance of Tab Manager, cannot ressurect the browser session!");
+        }
+        
       }
     }, 5000)),	// timeout to prevent action execution queue from freezing
   ]);
@@ -231,21 +252,29 @@ async (task) => {
 },
       openTab:
 async (task) => {
-  await this.tabManager.newTab();
-
-  return task;
+  if(this.tabManager){
+    await this.tabManager.newTab();
+    return task;
+  }
+  throw new Error("Missing instance of Tab Manager, cannot open a new tab!");
 },
 
       switchTabs:
 async (task) => {
-  await this.tabManager.switchTabs(task.data.currentTab);
-  return task;
+  if(this.tabManager){
+    await this.tabManager.switchTabs(task.data.currentTab);
+    return task;
+  }
+  throw new Error("Missing instance of Tab Manager, cannot switch tabs!");
 },
 
       closeTab:
 async (task) => {
-  await this.tabManager.closeTab(task.data.closing);
-  return task;
+  if(this.tabManager){
+    await this.tabManager.closeTab(task.data.closing);
+    return task;
+  }
+  throw new Error("Missing instance of Tab Manager, cannot close tab!");
 },
       insertText: async (task) => {
         await this.currentPage.keyboard.insertText(task.data.text);
@@ -268,8 +297,11 @@ async (task) => {
         return task;
       },
       reset: async () => {
-        await this.tabManager.recycleContext();
-        return types.EmptyAction;
+        if(this.tabManager){
+          await this.tabManager.recycleContext();
+          return types.EmptyAction;
+        }
+        throw new Error("Missing instance of Tab Manager, cannot reset the browser context!");
       },
       screenshot: async (task) => task,
       // When recording, screenshots are NOOP - they just get recorded.
@@ -285,7 +317,7 @@ async (task) => {
 
       // Validate payload type here????
 
-      if (!(task.payload.type in actionList)) {
+      if (!task || !(task.payload.type in actionList)) {
         console.error(`[PWWW] Invalid task type! ${JSON.stringify(task)}`);
       } else {
         console.log(`[PWWW] Executing ${task.payload.type}...`);

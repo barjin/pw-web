@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 import EventEmitter from 'events';
-import { Browser, Page } from 'playwright';
+import { Browser, Page, Response } from 'playwright';
 
 /**
  * Class for handling the browser tab management.
@@ -19,7 +19,7 @@ export default class TabManager extends EventEmitter {
   /**
  * Playwright Page object exposing the currently selected page.
  */
-  public currentPage : Page;
+  public currentPage : Page|null = null;
 
   /**
  * Constructor for the TabManager class
@@ -68,7 +68,7 @@ export default class TabManager extends EventEmitter {
       await this.pageBootstrapper(popup);
     });
 
-    const injectedPages = [];
+    const injectedPages:Promise<void>[] = [];
     this.injections.forEach((script) => {
       injectedPages.push(page.addInitScript(script));
     });
@@ -86,7 +86,7 @@ export default class TabManager extends EventEmitter {
   public listAllTabs() : { currentTab: number, tabs: string[] } {
     const currentTab = this.pages.findIndex((page) => page === this.currentPage);
 
-    const tabList = this.pages.map((page) => page.tabName);
+    const tabList = this.pages.map((page) => <string>page.tabName);
 
     return { currentTab, tabs: tabList };
   }
@@ -96,7 +96,7 @@ export default class TabManager extends EventEmitter {
  * @returns Promise gets resolved after the blank page is open.
  */
   public async recycleContext() : Promise<void> {
-    const closingContexts = [];
+    const closingContexts:Promise<void>[] = [];
     this.browser.contexts().forEach((context) => {
       closingContexts.push(context.close());
     });
@@ -141,7 +141,7 @@ export default class TabManager extends EventEmitter {
 
     await this.pages[idx].close();
 
-    if (this.currentPage.isClosed()) {
+    if (this.currentPage?.isClosed()) {
       // If we did not close the last tab, the new focused tab will be the successor of the closed one (otherwise we pick the new last one).
       this.currentPage = this.pages[idx !== this.pages.length ? idx : this.pages.length - 1];
     }
@@ -159,7 +159,7 @@ export default class TabManager extends EventEmitter {
   public async injectToAll(arg: (Function | { path: string })) : Promise<void> { /* eslint-disable-line @typescript-eslint/ban-types */
     this.injections.push(arg);
 
-    const injectedPages = [];
+    const injectedPages : Promise<Response | null>[] = [];
     this.pages.forEach((page) => {
       injectedPages.push(page.addInitScript(arg).then(() => page.reload()));
     });

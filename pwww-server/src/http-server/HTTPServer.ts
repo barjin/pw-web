@@ -14,13 +14,15 @@ export default class HTTPServer {
      */
   private apiHandler : APIHandler;
 
+  constructor(){
+    this.apiHandler = new APIHandler();
+  }
   /**
      * Start function for the Express.js HTTP server.
      * @param port - Port to start the Express.js HTTP server at.
     */
   StartServer(port = 8000) : void {
     const app = express();
-    this.apiHandler = new APIHandler();
 
     app.use(cors());
     app.use(express.json());

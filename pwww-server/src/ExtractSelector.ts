@@ -3,6 +3,8 @@
     CSS selector generator (analyzes given node and tries to create the best fitting selector)
 */
 
+import { isBuffer } from "util";
+
 enum CharType {
   VOWEL,
   CONSONANT,
@@ -71,9 +73,9 @@ class SelectorGenerator {
      * @param [root] - if specified, the uniqueness is tested only among this root's direct children.
      * @returns True if unique, false otherwise (the selector targets more than one element).
      */
-  private static isUniqueCss(selector : string, root : ParentNode = document) : boolean {
-    if (root === document) {
-      return root.querySelectorAll(selector).length === 1;
+  private static isUniqueCss(selector : string, root? : ParentNode|null) : boolean {
+    if(!root){
+      return document.querySelectorAll(selector).length === 1;
     }
     // If we specify the root node, we are looking only at the direct children (css child combinator >).
     return Array.from(root.querySelectorAll(selector))
@@ -88,7 +90,7 @@ class SelectorGenerator {
      * @param y y click coordinate
      * @returns Topmost element on the specified coordinates.
      */
-  static grabElementFromPoint(x: number, y: number) : Element {
+  static grabElementFromPoint(x: number, y: number) : (Element|null) {
     return document.elementFromPoint(x, y) || (() => {
       window.scrollTo(x, y);
       x -= window.pageXOffset;
@@ -102,7 +104,7 @@ class SelectorGenerator {
      * @param element DOM tree node being analysed.
      * @returns Object containing all the available data about the input Node.
      */
-  static getNodeInfo(element: Node) : { tagName: string, semanticalSelector: string, structuralSelector: string } | { error: string } {
+  static getNodeInfo(element: Node | null) : { tagName: string, semanticalSelector: string, structuralSelector: string } | { error: string } {
     if (!element) {
       return { error: 'This element is null. Try executing the action again, or use different approach.' };
     }
@@ -133,11 +135,19 @@ class SelectorGenerator {
     }
 
     let selector = element.tagName;
-    if (!SelectorGenerator.isUniqueCss(selector, element.parentNode)) { // if selector is not unique among siblings, we count its position (ugly, but simple)
-      const idx = Array.from(element.parentElement.children).findIndex((child) => (child === element));
-      selector += `:nth-child(${idx+1})`;
+    if (element.parentElement && !SelectorGenerator.isUniqueCss(selector, element.parentNode)) { // if selector is not unique among siblings, we count its position (ugly, but simple)
+      {
+        const idx = Array.from(element.parentElement.children).findIndex((child) => (child === element));
+        selector += `:nth-child(${idx+1})`;
+      }
     }
-    return `${this.GetSelectorStructural(element.parentElement)} > ${selector}`;
+    if(element.parentElement){
+      return `${this.GetSelectorStructural(element.parentElement)} > ${selector}`;
+    }
+    else{
+      throw new Error('DOM Tree malformed, orphaned element!');
+    }
+    
   }
 
   /*
@@ -181,10 +191,13 @@ class SelectorGenerator {
             // Removes potential long query/fragment strings (is it a good idea?)
             const match = url.match(/^(?<path>(.*?))(?<parameters>([?#].*))?$/);
 
-            if (match.groups.parameters && match.groups.parameters.length < 30) {
-              return url;
+            if(match && match.groups){
+              if (match.groups.parameters && match.groups.parameters.length < 30) {
+                return url;
+              }
+              return match.groups.path;
             }
-            return match.groups.path;
+            return url;
           },
         },
       ];
@@ -220,7 +233,7 @@ class SelectorGenerator {
       if (SelectorGenerator.isUniqueCss(selector)) { // unique in the whole document
         return selector;
       }
-      if (SelectorGenerator.isUniqueCss(selector, element.parentNode)) { // at least unique among its siblings
+      if (element.parentElement && SelectorGenerator.isUniqueCss(selector, element.parentNode)) { // at least unique among its siblings
         return `${this.GetSelectorSemantic(element.parentElement)} > ${selector}`;
       }
     }
@@ -236,7 +249,11 @@ class SelectorGenerator {
       }")`;
     }
 
-    return innerText ? element.tagName + innerText.replace(/([\n\r]|\r\n)/gm, ' ') : `${this.GetSelectorSemantic(element.parentElement)} > ${element.tagName}`;
+    if(element.parentElement){
+      return innerText ? element.tagName + innerText.replace(/([\n\r]|\r\n)/gm, ' ') : `${this.GetSelectorSemantic(element.parentElement)} > ${element.tagName}`;
+    }
+    throw new Error('DOM Tree malformed, orphaned element!');
+    
   }
 }
 
