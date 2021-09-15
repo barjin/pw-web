@@ -7,7 +7,7 @@ import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import { Component } from 'react';
 
-import { postAPI, getAPI } from '../restAPI'
+import { postAPI, getAPI } from '../RestAPI'
 
 interface IEmpty {};
 
@@ -168,7 +168,7 @@ function Footer(props: any) : JSX.Element{
  * Home Screen functional React component.
  * @returns The homescreen being rendered.
  */
-function HomeScreen() { 
+export default function HomeScreen() { 
     return (
       <div className="App">
         <Container fluid>
@@ -188,4 +188,4 @@ function HomeScreen() {
     );
   }
 
-  export {HomeScreen}
+  

@@ -9,7 +9,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 
 import {useState} from "react";
 
-import * as types from 'pwww-shared/types'
+import * as types from 'pwww-shared/Types'
 
 type ToolBarProps = {
   tabState: types.AppState['TabState'],
@@ -21,7 +21,7 @@ type ToolBarProps = {
  * @param {ToolBarProps} props - Reacts props object containing the tab state and navigation function for browsing and back/forward navigation
  * @returns The rendered toolbar.
  */
-function ToolBar(props: ToolBarProps) {
+export default function ToolBar(props: ToolBarProps) {
 
   const navigate = (ev : React.MouseEvent<HTMLElement>) => {
     if(ev.currentTarget !== null){
@@ -153,5 +153,3 @@ function TabBar(props: ITabBarProps){
         </Row>
       )
   }
-
-export {ToolBar};

@@ -3,14 +3,14 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import {Component, createRef} from 'react';
 
-import {ToolBar} from '../components/toolbar';
-import {SideBar} from '../components/side_bar';
+import ToolBar from '../components/ToolBar';
+import SideBar from '../components/SideBar';
 
 import querystring from 'querystring';
 
-import {ACKChannel} from '../ACKChannel';
-import * as types from 'pwww-shared/types';
-import {getAPI, postAPI} from '../restAPI';
+import ACKChannel from '../ACKChannel';
+import * as types from 'pwww-shared/Types';
+import {getAPI, postAPI} from '../RestAPI';
 
 import '../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -193,7 +193,7 @@ interface IRecScreenState {
 /**
  * Top-level React Component encompassing all the other components at the Recording Screen.
  */
-class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
+export default class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
   /**
    * React Router location (used for accessing the query part of the url, hostname etc.)
    */
@@ -652,5 +652,3 @@ class RecordingScreen extends Component<IRecScreenProps, IRecScreenState> {
   );
   }
 }
-
-export {RecordingScreen};

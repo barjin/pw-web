@@ -1,5 +1,5 @@
-import {RecordingScreen} from "./screens/recordingScreen";
-import {HomeScreen} from "./screens/homeScreen";
+import RecordingScreen from "./screens/RecordingScreen";
+import HomeScreen from "./screens/HomeScreen";
 
 import { useEffect } from 'react';
 

@@ -17,4 +17,4 @@ then
 	/usr/local/bin/npm install --prefix ./src/
 fi
 echo "[runner] Running server..."
-node --unhandled-rejections=warn ./src/pwwwServer.js
+node --unhandled-rejections=warn ./src/PwwwServer.js

@@ -18,10 +18,10 @@ import FormGroup from 'react-bootstrap/FormGroup';
 import FormLabel from 'react-bootstrap/FormLabel';
 import FormControl from 'react-bootstrap/FormControl';
 
-import {ApifyTranspiler, Transpiler} from 'pwww-shared/jsTranspiler';
+import {ApifyTranspiler, Transpiler} from 'pwww-shared/JSTranspiler';
 import {saveAs} from 'file-saver'
 
-import * as types from 'pwww-shared/types';
+import * as types from 'pwww-shared/Types';
 import {useRef, useEffect, useState, DragEvent, DragEventHandler, MouseEventHandler } from 'react';
 import ButtonToolbar from 'react-bootstrap/esm/ButtonToolbar';
 
@@ -105,7 +105,7 @@ type SideBarProps = {
  * @param {SideBarProps} props - React props object containing current recording state (which is being stored higher up), recording modifiers and recording control callback.
  * @returns The rendered sidebar.
  */
-function SideBar(props : SideBarProps) : JSX.Element {
+export default function SideBar(props : SideBarProps) : JSX.Element {
     const [downloadModal,setDownloadModal] = useState(false);
 
     const isPlaybackRunning : boolean = props.recordingState.playback ? true : false;
@@ -329,7 +329,7 @@ const showAttrs = ["selector", "url", "currentTab", "closing", "text", "back", "
     /**
      * Callback function to set the modal's visibility to false.
      */
-    closeSelf: Function,
+    closeSelf: () => void,
     /**
      * Callback function to edit the action higher up (where the recording is stored).
      */
@@ -378,5 +378,3 @@ const showAttrs = ["selector", "url", "currentTab", "closing", "text", "back", "
       </Modal>) : <></>)
     )
   }
-
-  export {SideBar};

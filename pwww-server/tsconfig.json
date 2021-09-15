@@ -2,11 +2,11 @@
     "compilerOptions": {
       "module": "CommonJS",
       "removeComments": true,
-      "outDir": "./build/",
+      "outDir": "./build/src",
       "target": "ES2020",
 	    "esModuleInterop": true,
       "skipLibCheck": true,
       "importsNotUsedAsValues": "remove"
     },
-    "exclude": ["./playwright","node_modules"]
+    "exclude": ["node_modules"]
 }

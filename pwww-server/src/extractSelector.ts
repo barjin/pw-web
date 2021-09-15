@@ -1,290 +1,243 @@
+/* eslint-disable max-len */
 /*
     CSS selector generator (analyzes given node and tries to create the best fitting selector)
 */
 
 enum CharType {
-    VOWEL,
-    CONSONANT,
-    NONALPHA
+  VOWEL,
+  CONSONANT,
+  NONALPHA,
 }
 
 /**
  * Calculates probability of the input being a human-readable string (using the Markov chain approach).
- * 
+ *
  * With an array input, the score is a product of scores of all the array items (gets reduced by a constant coefficient to punish long selectors).
  * @param input String or array of strings to be analyzed.
  * @returns Score on the 0 - 2 scale describing how human-readable the input is (bigger score - more likely to be a readable string)
  */
-function MarkovScore(input: (string|string[])) : number {
-    if(typeof input === "object"){
-        return (input as any[]).reduce((acc,x)=>acc*0.9*MarkovScore(x),1/0.9);
+function MarkovScore(input: (string | string[])) : number {
+  if (typeof input === 'object') {
+    return (input as any[]).reduce((acc, x) => acc * 0.9 * MarkovScore(x), 1 / 0.9);
+  }
+
+  const vowels = ['a', 'e', 'i', 'o', 'u', 'y'];
+  const consonants = ['b', 'c', 'd', 'f', 'g', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 's', 't', 'v', 'x', 'z', 'h', 'r', 'w'];
+
+  const classifyChar = (char : string) : CharType => {
+    if (vowels.includes(char)) {
+      return CharType.VOWEL;
     }
-
-    const vowels = ['a','e','i','o','u','y'];
-    const consonants = ['b','c','d','f','g','j','k','l','m','n','p','q','s','t','v','x','z','h','r','w'];
-
-    const classifyChar = (char : string) : CharType => {
-        if(vowels.includes(char)){
-            return CharType.VOWEL;
-        }
-        else if(consonants.includes(char)){
-            return CharType.CONSONANT;
-        }
-        return CharType.NONALPHA;
+    if (consonants.includes(char)) {
+      return CharType.CONSONANT;
     }
+    return CharType.NONALPHA;
+  };
 
-    //DISCLAIMER - ALL the values have been eyeballed and are a result of an educated guess (mainly punishing long sequences of non-alphabetical symbols)
-    // The values are already normalized (sequence of alternating vowels and consonants gets score 2 - and most of the "human readable strings" get scores above 1).
-    const transitions = [   
-        [0.9,1,0.1], //vowels
-        [1,0.9,0.1],  //consonants
-        [0.98,0.98,0.04] //non-alpha
-    ];
+  // DISCLAIMER - ALL the values have been eyeballed and are a result of an educated guess (mainly punishing long sequences of non-alphabetical symbols)
+  // The values are already normalized (sequence of alternating vowels and consonants gets score 2 - and most of the "human readable strings" get scores above 1).
+  const transitions = [
+    [0.9, 1, 0.1], // vowels
+    [1, 0.9, 0.1], // consonants
+    [0.98, 0.98, 0.04], // non-alpha
+  ];
 
-    let score = 1;
-    let charType, nextCharType;
-    
-    if(input.length === 0){
-        return 0;
-    }
+  let score = 1;
+  let charType; let
+    nextCharType;
 
-    input = input.toLowerCase();
-    charType = classifyChar(input[0]);
-    for(let i = 0; i < input.length-1; i++){
-        nextCharType = classifyChar(input[i+1]);
-        score *= transitions[charType][nextCharType];
-        charType = nextCharType
-    }
-    
-    return score*2;
+  if (input.length === 0) {
+    return 0;
+  }
+
+  input = input.toLowerCase();
+  charType = classifyChar(input[0]);
+  for (let i = 0; i < input.length - 1; i += 1) {
+    nextCharType = classifyChar(input[i + 1]);
+    score *= transitions[charType][nextCharType];
+    charType = nextCharType;
+  }
+
+  return score * 2;
 }
-
-/**
- * Calculates square of the Euclidean distance between two given vectors.
- * @param vecA First vector
- * @param vecB Second vector
- * @returns Squared Euclidean distance between the two vectors. Throws if the vectors are of different dimensions.
- */
-function EuclideanDistanceSq(vecA: number[], vecB: number[]) : number{
-    if(vecA.length !== vecB.length){
-        throw "Vectors of different size!";
-    }
-    return vecA.reduce((acc,x,id) => (acc + (x - vecB[id]) * (x - vecB[id])), 0);
-}
-// /*
-//     Tries to determine whether `input` is a human-readable string or a procedurally generated nonsense.
-// */
-// function readabilityScore(input : string) : number {
-//     var input = input.toLowerCase();
-
-//     let vowelCount = input.match(/[a|e|i|o|u|y]/g)?.length || 0;
-//     let consonantCount = input.match(/[b|c|d|f|g|j|k|l|m|n|p|q|s|t|v|x|z|h|r|w]/g)?.length || 0;
-
-//     let restCount = input.length - vowelCount - consonantCount;
-
-//     // Might possibly break (for example) for consonant-heavy languages.
-//     const standard_distribution = [0.3,0.6,0.1];
-//     const current_distibution = [vowelCount/input.length, consonantCount/input.length, restCount/input.length];
-
-//     console.log(current_distibution);
-//     /* 
-//         The distribution vectors are Manhattan-normalized (the coordintates sum up to 1).
-//         The biggest (Euclidean) distance between two points on the Mathattan unit sphere is 2 (from one vertex of the "sphere"-cube to the opposite).
-//         This function returns normalized, "inversed" distance - the higher the score, the better.
-//         Euclidean distance is probably not necessary, Manhattan metric would work just as well (though threshold for meaningful scripts would be different).
-//     */
-//     return 1-(EuclideanDistanceSq(standard_distribution, current_distibution))/2;
-// }
 
 /**
  * Main class for generating Playwright selectors by analyzing the element and its attributes and relations in the DOM tree.
  */
-class SelectorGenerator{
-    constructor(){
-    }
-
-    /**
+class SelectorGenerator {
+  /**
      * Tests if the (CSS) selector targets unique element on the current page.
      * @param selector String with the generated selector
      * @param [root] - if specified, the uniqueness is tested only among this root's direct children.
      * @returns True if unique, false otherwise (the selector targets more than one element).
      */
-    private _isUniqueCss(selector : string, root : ParentNode = document) : boolean{
-        if(root === document){
-            return root.querySelectorAll(selector).length === 1;
-        }
-        // If we specify the root node, we are looking only at the direct children (css child combinator >).
-        return Array.from(root.querySelectorAll(selector))
-                .filter((x) => (x.parentNode === root))
-                .length === 1;
+  private static isUniqueCss(selector : string, root : ParentNode = document) : boolean {
+    if (root === document) {
+      return root.querySelectorAll(selector).length === 1;
     }
+    // If we specify the root node, we are looking only at the direct children (css child combinator >).
+    return Array.from(root.querySelectorAll(selector))
+      .filter((x) => (x.parentNode === root))
+      .length === 1;
+  }
 
-    /**
-     * Grabs the topmost element on the specified coordinates. 
+  /**
+     * Grabs the topmost element on the specified coordinates.
      * If the coordinates are not in the current viewport, the page gets scrolled (the document.elementFromPoint would return null for out of screen elements).
      * @param x x click coordinate
      * @param y y click coordinate
      * @returns Topmost element on the specified coordinates.
      */
-    grabElementFromPoint(x: number, y: number) : Element {
-        return document.elementFromPoint(x,y) || (() => {
-            window.scrollTo(x,y);
-            x -= window.pageXOffset;
-            y -= window.pageYOffset;
-            return document.elementFromPoint(x,y);
-        })();
-        
-    }
+  static grabElementFromPoint(x: number, y: number) : Element {
+    return document.elementFromPoint(x, y) || (() => {
+      window.scrollTo(x, y);
+      x -= window.pageXOffset;
+      y -= window.pageYOffset;
+      return document.elementFromPoint(x, y);
+    })();
+  }
 
-    /**
+  /**
      * Generates semantic selector, structural selector and tagname for the element (node).
      * @param element DOM tree node being analysed.
      * @returns Object containing all the available data about the input Node.
      */
-    getNodeInfo(element: Node) : {tagName: string, semanticalSelector: string, structuralSelector: string} | {error: string}{
-        if(!element){
-            return {error: "This element is null. Try executing the action again, or use different approach."};
-        }
-        if(!(element instanceof HTMLElement)){
-            console.error(`Watch out! Cannot generate selector for ${(element as any).constructor.name}, trying parent...`);
-            return this.getNodeInfo(element.parentElement);
-        }
-
-        return {
-            tagName: (element as Element).tagName,
-            semanticalSelector: this.GetSelectorSemantic(element as HTMLElement),
-            structuralSelector: this.GetSelectorStructural(element)
-        }
-        
+  static getNodeInfo(element: Node) : { tagName: string, semanticalSelector: string, structuralSelector: string } | { error: string } {
+    if (!element) {
+      return { error: 'This element is null. Try executing the action again, or use different approach.' };
+    }
+    if (!(element instanceof HTMLElement)) {
+      console.error(`Watch out! Cannot generate selector for ${(element as any).constructor.name}, trying parent...`);
+      return this.getNodeInfo(element.parentElement);
     }
 
-    /**
+    return {
+      tagName: (element as Element).tagName,
+      semanticalSelector: SelectorGenerator.GetSelectorSemantic(element as HTMLElement),
+      structuralSelector: SelectorGenerator.GetSelectorStructural(element),
+    };
+  }
+
+  /**
      * Generates structural selector (describing element by its DOM tree location).
      * @param element Element being described.
      * @returns CSS-compliant selector describing the element's location in the DOM tree.
      */
-    private GetSelectorStructural(element : Element) : string{
-        // Base conditions for the recursive approach.
-        if(element.tagName === "BODY"){
-            return "BODY";
-        }
-        else if(element.id){
-            return `#${element.id}`;
-        }
-
-        let selector = element.tagName;
-        if(!this._isUniqueCss(selector, element.parentNode)){  // if selector is not unique among siblings, we count its position (ugly, but simple)
-            let idx = 1;
-            for(let child of element.parentElement.children){
-                if(child == element){
-                    selector += `:nth-child(${idx})`;
-                    break;
-                }
-                idx++;
-            }
-        }
-        return this.GetSelectorStructural(element.parentElement) + " > " + selector;
+   private static GetSelectorStructural(element : Element) : string {
+    // Base conditions for the recursive approach.
+    if (element.tagName === 'BODY') {
+      return 'BODY';
+    }
+    if (element.id) {
+      return `#${element.id}`;
     }
 
-    /*
+    let selector = element.tagName;
+    if (!SelectorGenerator.isUniqueCss(selector, element.parentNode)) { // if selector is not unique among siblings, we count its position (ugly, but simple)
+      const idx = Array.from(element.parentElement.children).findIndex((child) => (child === element));
+      selector += `:nth-child(${idx})`;
+    }
+    return `${this.GetSelectorStructural(element.parentElement)} > ${selector}`;
+  }
+
+  /*
         Tries to recursively find the best fitting selector for the given element.
         The recursive approach (parent - child chaining) may lead to ugly, long and implementation-specific selectors getting generated.
             Some heuristic might be possible (limiting the number of chained selectors?)
     */
-   /**
+  /**
     * Generates semantical selector (describing element by its attributes and properties).
     * @param element Element being described.
     * @returns Playwright style selector describing the given element based on its properties.
     */
-    private GetSelectorSemantic(element : HTMLElement) : string{
-        if(element.tagName === "BODY"){
-            // Base condition for the recursive approach.
-            return "BODY";
-        }
-
-        let selector = (() => {
-            const shorten = (length:number) => {
-                return (string: string) => {
-                    return string.substring(0,length);
-                }
-            }
-            // Optional (but very useful) attributes, sorted by usefulness
-            // "Condition" describes additional condition (other than sole existence of this attribute on the element), 
-            //    which needs to be satisfied in order to use this attribute.
-            // "Transform" should be a truncating function (using it, the selector equality changes to *=, targetting elements containing values as substrings).
-            const attributes : 
-                {
-                attr: RegExp, 
-                condition?: (element: HTMLElement) => boolean,
-                transform?: (attr: string) => string
-                }[]= [
-                {attr: /^id$/},   //in CSS, #id === [id=...] ???
-                {attr: /^accesskey$/},
-                {attr: /^title$/, transform: shorten(20)},
-                {attr: /^alt$/, transform: shorten(20)},
-                {attr: /^name$/},
-                {attr: /^placeholder$/},
-                {attr: /^data-/},
-                {attr: /^href$/, transform: (url: string) : string => {
-                    // Removes potential long query/fragment strings (is it a good idea?)
-                    let match = url.match(/^(?<path>(.*?))(?<parameters>([\?\#].*))?$/);
-
-                    if(match.groups.parameters && match.groups.parameters.length < 30){
-                        return url;
-                    }
-                    return match.groups.path;
-                }}
-            ]
-        
-            const elemAttrs = Array.from(element.attributes);
-            for(let attr of attributes){
-                let match = elemAttrs.filter(x => x.name.match(attr.attr));
-                if(match.length){
-                    return match.map(x => {
-                        if(attr.transform){
-                            return `[${x.name}*="${attr.transform(x.value)}"]`;
-                        }
-                        return `[${x.name}="${x.value}"]`;
-                        }
-                    ).join("");
-                }
-            }
-
-            if (element.className !== ""){
-                /* 
-                    Otherwise we combine all element's classes and hope for the best (is this the best idea?)
-                    Is it OK to assume that classes are more specific than html tags?
-                */
-                if(MarkovScore(element.className.split(/\s+/)) > 1){
-                    return '.'+element.className.split(/\s+/).join('.');
-                }
-                console.log(`${element.className} did not pass the Markov test!`);
-            }
-            return null;
-        })();
-        
-        if(selector){
-            if(this._isUniqueCss(selector)){   // unique in the whole document
-                return selector;
-            }
-            else if(this._isUniqueCss(selector, element.parentNode)){  // at least unique among its siblings
-                return this.GetSelectorSemantic(element.parentElement) + " > " + selector;
-            }
-        }
-        
-        // the last resort is to describe the element in a "human-readable" form (e.g. GREEN BUTTON with TEXT "Log in")
-        //              i.e. tag + class + innerText
-        //      Long text content gets truncated (> 30 chars).
-        //      Class selector is disabled for now (complicated XPATH translation). 
-        let innerText = "";
-        if(element.innerText !== ""){
-            innerText = ":has-text(\"" + 
-                ((element.innerText.length < 30) ? element.innerText : element.innerText.slice(0,30))
-            + "\")"
-        }
-
-        return innerText ? element.tagName + innerText.replace(/([\n\r]|\r\n)/gm, " ") : `${this.GetSelectorSemantic(element.parentElement)} > ${element.tagName}`;
+  private static GetSelectorSemantic(element : HTMLElement) : string {
+    if (element.tagName === 'BODY') {
+      // Base condition for the recursive approach.
+      return 'BODY';
     }
+
+    const selector = (() => {
+      const shorten = (length:number) => (string: string) => string.substring(0, length);
+      // Optional (but very useful) attributes, sorted by usefulness
+      // "Condition" describes additional condition (other than sole existence of this attribute on the element),
+      //    which needs to be satisfied in order to use this attribute.
+      // "Transform" should be a truncating function (using it, the selector equality changes to *=, targetting elements containing values as substrings).
+      const attributes :
+      {
+        attr: RegExp,
+        condition?: (element: HTMLElement) => boolean,
+        transform?: (attr: string) => string
+      }[] = [
+        { attr: /^id$/ }, // in CSS, #id === [id=...] ???
+        { attr: /^accesskey$/ },
+        { attr: /^title$/, transform: shorten(20) },
+        { attr: /^alt$/, transform: shorten(20) },
+        { attr: /^name$/ },
+        { attr: /^placeholder$/ },
+        { attr: /^data-/ },
+        {
+          attr: /^href$/,
+          transform: (url: string) : string => {
+            // Removes potential long query/fragment strings (is it a good idea?)
+            const match = url.match(/^(?<path>(.*?))(?<parameters>([?#].*))?$/);
+
+            if (match.groups.parameters && match.groups.parameters.length < 30) {
+              return url;
+            }
+            return match.groups.path;
+          },
+        },
+      ];
+
+      const elemAttrs = Array.from(element.attributes);
+
+      for (const attr of attributes) {
+        const match = elemAttrs.filter((x) => x.name.match(attr.attr));
+        if (match.length) {
+          return match.map((x) => {
+            if (attr.transform) {
+              return `[${x.name}*="${attr.transform(x.value)}"]`;
+            }
+            return `[${x.name}="${x.value}"]`;
+          }).join('');
+        }
+      }
+
+      if (element.className !== '') {
+        /*
+          Otherwise we combine all element's classes and hope for the best (is this the best idea?)
+          Is it OK to assume that classes are more specific than html tags?
+        */
+        if (MarkovScore(element.className.split(/\s+/)) > 1) {
+          return `.${element.className.split(/\s+/).join('.')}`;
+        }
+        console.log(`${element.className} did not pass the Markov test!`);
+      }
+      return null;
+    })();
+
+    if (selector) {
+      if (SelectorGenerator.isUniqueCss(selector)) { // unique in the whole document
+        return selector;
+      }
+      if (SelectorGenerator.isUniqueCss(selector, element.parentNode)) { // at least unique among its siblings
+        return `${this.GetSelectorSemantic(element.parentElement)} > ${selector}`;
+      }
+    }
+
+    // the last resort is to describe the element in a "human-readable" form (e.g. GREEN BUTTON with TEXT "Log in")
+    //              i.e. tag + class + innerText
+    //      Long text content gets truncated (> 30 chars).
+    //      Class selector is disabled for now (complicated XPATH translation).
+    let innerText = '';
+    if (element.innerText !== '') {
+      innerText = `:has-text("${
+        (element.innerText.length < 30) ? element.innerText : element.innerText.slice(0, 30)
+      }")`;
+    }
+
+    return innerText ? element.tagName + innerText.replace(/([\n\r]|\r\n)/gm, ' ') : `${this.GetSelectorSemantic(element.parentElement)} > ${element.tagName}`;
+  }
 }
 
 // UNUSED (originally used with the selector generating Tampermonkey script)
@@ -308,7 +261,7 @@ class SelectorGenerator{
 //             console.error("XPATH error!");
 //             console.error(e);
 //             return [];
-//         }       
+//         }
 //     }
 
 //     private _CssQuery = (selector : string) : HTMLElement[] => {
@@ -320,14 +273,14 @@ class SelectorGenerator{
 //             console.error("CSS error!");
 //             console.error(e);
 //             return [];
-//         }       
+//         }
 //     }
 
 //     private _evaluateSelector = (selector : string, engine : ("XPATH"|"CSS")) : HTMLElement => {
 //         if(engine == "XPATH" || engine == "CSS"){
 //             let result = engine == "XPATH" ? this._XPathQuery(selector) : this._CssQuery(selector);
 //             // if(result.length !== 1){
-//             //     throw result.length > 1 ? 
+//             //     throw result.length > 1 ?
 //             //         `${selector} is ambiguous, there are ${result.length} matching elements!`
 //             //         : `${selector} - no such elements!`;
 //             // }
@@ -353,7 +306,7 @@ class SelectorGenerator{
 //         if(selectorMatch){
 //             selector = this._regMatchToXPath(selectorMatch);
 //         }
-        
+
 //         let element : HTMLElement = this._evaluateSelector(selector, (selectorMatch ? 'XPATH' : 'CSS'));
 
 //         if(this._activeElement !== null){
@@ -364,5 +317,5 @@ class SelectorGenerator{
 //     }
 // }
 
-window["SelectorGenerator"] = SelectorGenerator;
+(<Window & { SelectorGenerator: typeof SelectorGenerator }><unknown>window).SelectorGenerator = SelectorGenerator;
 // window["SelectorHighlighter"] = SelectorHighlighter;

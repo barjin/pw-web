@@ -1,4 +1,4 @@
-import * as types from 'pwww-shared/types';
+import * as types from './Types';
 
 // Translating only single page recordings at the moment.
 // class MockTabManager {

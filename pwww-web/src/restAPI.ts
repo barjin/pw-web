@@ -1,4 +1,4 @@
-import * as types from 'pwww-shared/types'
+import * as types from 'pwww-shared/Types'
 
 const api_url = process.env.NODE_ENV === 'production' ? '/api/' : "http://localhost:8000/api/";
 

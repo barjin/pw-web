@@ -1,129 +1,141 @@
-const yargs = require('yargs')
-const { hideBin } = require('yargs/helpers')
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
-import {BrowserSession} from './browserSession';
-import {HTTPServer} from './http-server/server_v2.js';
 import crypto from 'crypto';
-
 import ws, { Server } from 'ws';
+import BrowserSession from './BrowserSession';
+import HTTPServer from './http-server/HTTPServer.js';
 
 /**
  * Main server class, manages browser sessions, runs the HTTP server.
  */
 class PWWWServer {
-	/**
-	 * Websockets server handling the textual (JSON) commands from the client.
-	 */
-	cmdServer : Server;
-	/**
-	 * Websockets server handling the binary data transfer (mostly image screencast).
-	 */
-	streamServer: Server;
+/**
+ * Websockets server handling the textual (JSON) commands from the client.
+ */
+  cmdServer : Server;
 
-	/**
-	 * List of active sessions, along with their WS connections and tokens.
-	 */
-	sessions : {
-		cmdConn : ws, 
-		streamConn: ws, 
-		token: string,
-		browserSession : BrowserSession
-	}[] = [];
+  /**
+ * Websockets server handling the binary data transfer (mostly image screencast).
+ */
+  streamServer: Server;
 
-	/**
-	 * Helper method to signalize error over given WS connection and close it.
-	 * @param conn WS connection object
-	 */
-	private errorAndClose(conn: ws){
-		conn.send(JSON.stringify({"error":true}));
-		conn.close();
-	}
+  httpPort : number;
 
-	/**
-	 * Constructor for the PWWWServer class
-	 * 
-	 * Opens WS servers, spawns and starts an instance of HTTPServer, binds the event listeners to the WS connections (handles browser session management, pairs CMD/stream channels using tokens).
-	 * @param messagePort (number) - port for the WS message channels
-	 * @param streamPort (number) - port for the WS stream channels
-	 * @param httpPort (number) - port for the HTTP server (serves web app and REST API)
-	 */
-	constructor(messagePort, streamPort, httpPort){
-		this.cmdServer = new ws.Server({port: messagePort});
-		this.streamServer = new ws.Server({port: streamPort});
+  /**
+ * List of active sessions, along with their WS connections and tokens.
+ */
+  sessions : {
+    cmdConn : ws,
+    streamConn: ws,
+    token: string,
+    browserSession : BrowserSession
+  }[] = [];
 
-		this.cmdServer.on('connection', (conn : ws) => {
-			if(this.sessions.length >= (process.env["PWWW_MAX_SESSIONS"] || 5)){
-				console.warn(`Maximum number of simultaneous sessions reached, forbidding new connection!`);
-				this.errorAndClose(conn);
-			}
-			else{
-				let token = crypto.randomBytes(64).toString('hex');
-				this.sessions.push({
-					cmdConn : conn,
-					streamConn: null,
-					token: token,
-					browserSession: null
-				});
+  /**
+ * Helper method to signalize error over given WS connection and close it.
+ * @param conn WS connection object
+ */
+  private static errorAndClose(conn: ws) {
+    conn.send(JSON.stringify({ error: true }));
+    conn.close();
+  }
 
-				conn.on('close',() => {
-					for(let session of this.sessions){
-						if(session.token === token){
-							session.browserSession.close();
-						}
-					}
-					this.sessions = this.sessions.filter((x) => x.token !== token);
-					console.log(`[${this.sessions.length}/${process.env["PWWW_MAX_SESSIONS"] || 5}] Session ${token.substring(0,7)} closed.`);
-				});
+  /**
+ * Constructor for the PWWWServer class
+ *
+ * Opens WS servers, spawns an instance of HTTPServer.
+ *
+ * @param messagePort (number) - port for the WS message channels
+ * @param streamPort (number) - port for the WS stream channels
+ * @param httpPort (number) - port for the HTTP server (serves web app and REST API)
+ */
+  constructor(messagePort, streamPort, httpPort) {
+    this.cmdServer = new ws.Server({ port: messagePort });
+    this.streamServer = new ws.Server({ port: streamPort });
+    this.httpPort = httpPort;
+  }
 
-				console.log(`[${this.sessions.length}/${process.env["PWWW_MAX_SESSIONS"] || 5}] Session ${token.substring(0,7)} created.`);
-				conn.send(JSON.stringify({token: token}));
-			}
-		});
+  /**
+   *
+   * Starts the HTTP/Websocket server.
+   * Binds the event listeners to the WS connections - handles browser session management,
+   * pairs CMD/stream channels using tokens.
+   */
+  public StartServer() {
+    this.cmdServer.on('connection', (conn : ws) => {
+      if (this.sessions.length >= (process.env.PWWW_MAX_SESSIONS || 5)) {
+        console.warn('Maximum number of simultaneous sessions reached, forbidding new connection!');
+        PWWWServer.errorAndClose(conn);
+      } else {
+        const token = crypto.randomBytes(64).toString('hex');
+        this.sessions.push({
+          cmdConn: conn,
+          streamConn: null,
+          token,
+          browserSession: null,
+        });
 
-		this.streamServer.on('connection', (conn : ws) => {
-			conn.on('message', (message: string) => {
-				let obj = JSON.parse(message);
-				if(obj.token){
-					for(let sess of this.sessions){
-						if(sess.token === obj.token && !(sess.streamConn)){
-							sess.streamConn = conn;
-							if(!sess.browserSession){
-								sess.browserSession = new BrowserSession(sess.cmdConn, sess.streamConn);
-							}
-							return;
-						}
-					}
-					this.errorAndClose(conn);
-				}
-			})
-		});
+        conn.on('close', () => {
+          this.sessions.forEach((session) => {
+            if (session.token === token) {
+              session.browserSession.close();
+            }
+          });
 
-		let httpServer = new HTTPServer();
+          this.sessions = this.sessions.filter((x) => x.token !== token);
+          console.log(`[${this.sessions.length}/${process.env.PWWW_MAX_SESSIONS || 5}] Session ${token.substring(0, 7)} closed.`);
+        });
 
-		httpServer.StartServer(httpPort);
-	}
+        console.log(`[${this.sessions.length}/${process.env.PWWW_MAX_SESSIONS || 5}] Session ${token.substring(0, 7)} created.`);
+        conn.send(JSON.stringify({ token }));
+      }
+    });
+
+    this.streamServer.on('connection', (conn : ws) => {
+      conn.on('message', (message: string) => {
+        const obj = JSON.parse(message);
+        if (obj.token) {
+          const idx = this.sessions.findIndex(
+            (sess) => (sess.token === obj.token && !(sess.streamConn)),
+          );
+
+          if (idx === -1) {
+            PWWWServer.errorAndClose(conn);
+          } else {
+            const sess = this.sessions[idx];
+
+            sess.streamConn = conn;
+            sess.browserSession = new BrowserSession(sess.cmdConn, sess.streamConn);
+          }
+        }
+      });
+    });
+
+    const httpServer = new HTTPServer();
+    httpServer.StartServer(this.httpPort);
+  }
 }
 
-yargs(hideBin(process.argv))
-  .command(['$0','start'], 'Starts the PWWW server', (yargs) => {
-    return yargs
-      .option('messagePort', {
-        describe: 'Websockets port for server-client signalling',
-		type: 'number',
-        default: 8080
-      })
-	  .option('streamPort', {
-		describe: 'Websockets port for browser screencast streaming',
-		type: 'number',
-		default: 8081
-	  })
-	  .option('httpPort', {
-		describe: 'HTTP port for serving frontend',
-		type: 'number',
-		default: 8000
-	  })
-  }, (argv) => {
+yargs(hideBin(process.argv)) // eslint-disable-line @typescript-eslint/no-unused-expressions
+  .command(['$0', 'start'], 'Starts the PWWW server', (ags) => ags
+    .option('messagePort', {
+      describe: 'Websockets port for server-client signalling',
+      type: 'number',
+      default: 8080,
+    })
+    .option('streamPort', {
+      describe: 'Websockets port for browser screencast streaming',
+      type: 'number',
+      default: 8081,
+    })
+    .option('httpPort', {
+      describe: 'HTTP port for serving frontend',
+      type: 'number',
+      default: 8000,
+    }), (argv) => {
     const server = new PWWWServer(argv.messagePort, argv.streamPort, argv.httpPort);
-	console.log(`Server is running on ports ${argv.messagePort}, ${argv.streamPort} (WebSockets)...
+    server.StartServer();
+    console.log(`Server is running on ports ${argv.messagePort}, ${argv.streamPort} (WebSockets)...
 Frontend available at http://localhost:${argv.httpPort}`);
   }).argv;

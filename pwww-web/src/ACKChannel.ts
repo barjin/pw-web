@@ -5,7 +5,7 @@
  * 
  * Uses promises to unify the standard "fetch-like" HTTP-approach and the bidirectional nature of WebSockets communication.
  */
-class ACKChannel {
+export default class ACKChannel {
   /**
    * Global ACK message counter (used for generating unique message IDs sequentially)
    */
@@ -108,5 +108,3 @@ class ACKChannel {
       }
     }
   }
-
-  export {ACKChannel};
