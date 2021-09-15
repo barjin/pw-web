@@ -135,7 +135,7 @@ class SelectorGenerator {
     let selector = element.tagName;
     if (!SelectorGenerator.isUniqueCss(selector, element.parentNode)) { // if selector is not unique among siblings, we count its position (ugly, but simple)
       const idx = Array.from(element.parentElement.children).findIndex((child) => (child === element));
-      selector += `:nth-child(${idx})`;
+      selector += `:nth-child(${idx+1})`;
     }
     return `${this.GetSelectorStructural(element.parentElement)} > ${selector}`;
   }

@@ -1,6 +1,6 @@
 # PWWW Dockerfile
 
-FROM node:16-alpine
+FROM node:12-alpine
 
 EXPOSE 8000/tcp
 EXPOSE 8080/tcp
