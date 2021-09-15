@@ -22,9 +22,8 @@ jobs:
 
       - name: (Server) Install dependencies and build project
         run : |
-          sudo npm install yarn
           cd $GITHUB_WORKSPACE/
-          sudo yarn install
+          sudo npm install --production=false
 
           cd $GITHUB_WORKSPACE/pwww-shared
           sudo tsc *.ts
