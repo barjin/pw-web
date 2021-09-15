@@ -1,3 +1,0 @@
-[submodule "pwww-server/playwright"]
-	path = pwww-server/playwright
-	url = https://github.com/microsoft/playwright.git
