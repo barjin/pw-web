@@ -35,6 +35,7 @@ jobs:
       - name: (React) Build React App
         run: |
           cd $GITHUB_WORKSPACE/pwww-web
+          sudo npm install .
           sudo npm run-script build
       
       - name: (React) Copy app and shared code to build folder
