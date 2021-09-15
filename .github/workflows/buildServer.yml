@@ -30,6 +30,7 @@ jobs:
 
           cd $GITHUB_WORKSPACE/pwww-server/tools
           sudo chmod +x ./build.sh
+          ls .
           sudo ./build.sh
       
       - name: (React) Build React App
