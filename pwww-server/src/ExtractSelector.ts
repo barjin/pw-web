@@ -3,8 +3,6 @@
     CSS selector generator (analyzes given node and tries to create the best fitting selector)
 */
 
-import { isBuffer } from "util";
-
 enum CharType {
   VOWEL,
   CONSONANT,

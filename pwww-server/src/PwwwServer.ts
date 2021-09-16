@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import ws, { Server } from 'ws';
 import BrowserSession from './BrowserSession';
 import HTTPServer from './http-server/HTTPServer.js';
+import logger, {Level} from 'pwww-shared/logger';
 
 /**
  * Main server class, manages browser sessions, runs the HTTP server.
@@ -65,7 +66,7 @@ class PWWWServer {
   public StartServer() {
     this.cmdServer.on('connection', (conn : ws) => {
       if (this.sessions.length >= (process.env.PWWW_MAX_SESSIONS || 5)) {
-        console.warn('Maximum number of simultaneous sessions reached, forbidding new connection!');
+        logger('Maximum number of simultaneous sessions reached, forbidding new connection!', Level.WARN);
         PWWWServer.errorAndClose(conn);
       } else {
         const token = crypto.randomBytes(64).toString('hex');
@@ -83,16 +84,17 @@ class PWWWServer {
                 session.browserSession.close();
               }
               else{
+                logger('Cannot close BrowserSession, not running!', Level.WARN);
                 throw new Error('Cannot close BrowserSession, not running!');
               }
             }
           });
 
           this.sessions = this.sessions.filter((x) => x.token !== token);
-          console.log(`[${this.sessions.length}/${process.env.PWWW_MAX_SESSIONS || 5}] Session ${token.substring(0, 7)} closed.`);
+          logger(`[${this.sessions.length}/${process.env.PWWW_MAX_SESSIONS || 5}] Session ${token.substring(0, 7)} closed.`);
         });
 
-        console.log(`[${this.sessions.length}/${process.env.PWWW_MAX_SESSIONS || 5}] Session ${token.substring(0, 7)} created.`);
+        logger(`[${this.sessions.length}/${process.env.PWWW_MAX_SESSIONS || 5}] Session ${token.substring(0, 7)} created.`);
         conn.send(JSON.stringify({ token }));
       }
     });
@@ -141,6 +143,6 @@ yargs(hideBin(process.argv)) // eslint-disable-line @typescript-eslint/no-unused
     }), (argv) => {
     const server = new PWWWServer(argv.messagePort, argv.streamPort, argv.httpPort);
     server.StartServer();
-    console.log(`Server is running on ports ${argv.messagePort}, ${argv.streamPort} (WebSockets)...
-Frontend available at http://localhost:${argv.httpPort}`);
+    
+    logger(`Server is running on ports ${argv.messagePort}, ${argv.streamPort} (WebSockets)...`);
   }).argv;

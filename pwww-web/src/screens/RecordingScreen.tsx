@@ -1,12 +1,11 @@
 /* eslint-disable max-len */
-import Col from 'react-bootstrap/Col';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
+import {
+  Button, Container, Row, Col,
+} from 'react-bootstrap';
 import React, { Component, createRef } from 'react';
 
 import querystring from 'querystring';
 import * as types from 'pwww-shared/Types';
-import { Button } from 'react-bootstrap';
 import ToolBar from '../components/ToolBar';
 import SideBar from '../components/SideBar';
 
@@ -323,7 +322,6 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
    * @returns Gets resolved after the recording has ended (rejected if there was an error during the playback).
    */
   private playRecording = (step = false) : Promise<void> => {
-    const { RecordingState } = this.state;
     this.setState((prevState) => (
       {
         RecordingState: {
@@ -333,6 +331,9 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
         },
       }
     ));
+    const { RecordingState } = this.state;
+    RecordingState.playback = step ? 'step' : 'cont';
+
     if (RecordingState.recording.actions) { //! == []
       /* Sends all actions to server, waits for ACK (promise resolve) after every sent action. */
       return [{ idx: -1, type: 'reset', data: {} },
@@ -427,7 +428,6 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
         } else {
           this.playRecording(true).catch(() => {});
         }
-
         break;
       case 'stop':
         this.stopSignal = true;

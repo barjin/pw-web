@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import fs from 'fs';
 import path from 'path';
+import Logger, {Level} from 'pwww-shared/Logger';
 
 import type { Request, Response } from 'express';
 
@@ -73,7 +74,7 @@ export default class APIHandler {
 || parseInt(<string>req.query.id,10) < 0
 || parseInt(<string>req.query.id,10) >= fs.readdirSync(paths.savePath).length) {
       this.error(res, new Error('Invalid ID!'));
-      console.log(`${req.query.id} is not a valid recording ID!`);
+      Logger(`${req.query.id} is not a valid recording ID!`,Level.ERROR);
       return;
     }
     try {
@@ -186,7 +187,7 @@ export default class APIHandler {
 * @param res - Express.js response object
 */
   routeAPIGetRequest = (req : Request, res: Response) : void => {
-    console.log(`[REST] GET request at ${req.path}`);
+    Logger(`[REST] GET request at ${req.path}`);
 
     switch (req.path) {
       case '/api/recordings':
@@ -209,7 +210,7 @@ export default class APIHandler {
 * @param res - Express.js response object
 */
   routeAPIPostRequest = (req : Request, res: Response) : void => {
-    console.log(`[REST] POST request at ${req.path}`);
+    Logger(`[REST] POST request at ${req.path}`);
 
     switch (req.path) {
       case '/api/renameRecording':

@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 import { chromium, Page, Browser } from 'playwright';
+import Logger, {Level} from 'pwww-shared/Logger';
 
 import * as types from 'pwww-shared/Types';
 import ws from 'ws';
@@ -77,7 +78,7 @@ export default class BrowserSession {
  * Spawns a new instance of the Chromium browser with a TabManager, binds all the necessary event listeners and opens a new (blank) tab - this also creates a new browser context.
  */
   private async initialize() : Promise<void> {
-    console.log('Initializing...');
+    Logger('Initializing browser...',Level.DEBUG);
     this.browser = <Browser>(await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] } : {}));
     
     this.close = (() => {
@@ -98,7 +99,7 @@ export default class BrowserSession {
 
     await this.tabManager.injectToAll({ path: `${__dirname}/ExtractSelector.js` });
 
-    console.log('Opening new tab...');
+    Logger('Opening new tab...', Level.DEBUG);
     await this.tabManager.newTab();
   }
 
@@ -135,7 +136,7 @@ export default class BrowserSession {
         })
         .catch((e) => this.signalError(message, e.message, this.streamingChannel));
     } else {
-      console.error('[PWWW] Browser is not running, cannot send screenshot!');
+      Logger('[PWWW] Browser is not running, cannot send screenshot!', Level.ERROR);
     }
   }
 
@@ -178,8 +179,7 @@ export default class BrowserSession {
   if (!task.data.selector) {
     try {
       const selectorObj = (await this.currentPage.evaluate(([click]) => {
-        const generator = (<Window & typeof globalThis & { SelectorGenerator: any }>window).SelectorGenerator;
-        return generator.getNodeInfo(generator.grabElementFromPoint(click.x, click.y));
+        return (<any>window)["SelectorGenerator"].getNodeInfo((<any>window)["SelectorGenerator"].grabElementFromPoint(click.x, click.y));
       }, [task.data]));
       if (selectorObj.error) {
         throw new Error(selectorObj.error);
@@ -187,10 +187,10 @@ export default class BrowserSession {
 
       task.data.selector = selectorObj.semanticalSelector;
     } catch (e) {
-      console.error(e);
+      Logger(<string>e, Level.ERROR);
       throw e;
     }
-    console.log(`Clicked on ${task.data.selector}`);
+    Logger(`Clicked on ${task.data.selector}`, Level.DEBUG);
   }
   if (task.data.selector) {
     await this.currentPage.click(task.data.selector, { timeout: 5000 });
@@ -206,7 +206,7 @@ export default class BrowserSession {
     .then(() => task.data.url)
     .catch(async () => {
       const queryURL = `https://duckduckgo.com/?q=${encodeURIComponent(task.data.url)}`;
-      console.log(queryURL);
+      Logger(`Browsing to ${queryURL}...`, Level.DEBUG);
       await this.currentPage.goto(queryURL);
       return queryURL;
     });
@@ -318,9 +318,9 @@ async (task) => {
       // Validate payload type here????
 
       if (!task || !(task.payload.type in actionList)) {
-        console.error(`[PWWW] Invalid task type! ${JSON.stringify(task)}`);
+        Logger(`[PWWW] Invalid task type! ${JSON.stringify(task)}`,Level.ERROR);
       } else {
-        console.log(`[PWWW] Executing ${task.payload.type}...`);
+        Logger(`[PWWW] Executing ${task.payload.type}...`,Level.DEBUG);
 
         Promise.all(
           [

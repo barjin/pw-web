@@ -4,10 +4,10 @@
       "removeComments": true,
       "outDir": "./build/src",
       "target": "ES2020",
-	  "esModuleInterop": true,
+	    "esModuleInterop": true,
       "skipLibCheck": true,
       "importsNotUsedAsValues": "remove",
-	  "strict": true
+	    "strict": true
     },
     "exclude": ["node_modules"],
 	"include": ["src"]

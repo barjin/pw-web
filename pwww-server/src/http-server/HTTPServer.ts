@@ -5,6 +5,8 @@ import path from 'path';
 import APIHandler from './APIHandler';
 import * as paths from '../Paths';
 
+import Logger, {Level} from 'pwww-shared/Logger';
+
 /**
  * Base HTTP server object
  */
@@ -35,7 +37,7 @@ export default class HTTPServer {
     app.get(['/', '/recording'], (_, res) => { res.sendFile(path.join(paths.wwwPath, 'index.html')); });
 
     app.listen(port, () => {
-      console.log(`HTTP sever listening at http://localhost:${port}`);
+      Logger(`HTTP server listening at http://localhost:${port}`);
     });
   }
 }

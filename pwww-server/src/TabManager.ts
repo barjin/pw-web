@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import EventEmitter from 'events';
 import { Browser, Page, Response } from 'playwright';
+import logger, { Level } from 'pwww-shared/logger';
 
 /**
  * Class for handling the browser tab management.
@@ -60,7 +61,7 @@ export default class TabManager extends EventEmitter {
         page.tabName = await page.title();
         this.notifyStateChange();
       } catch (e) {
-        console.error(e);
+        logger(<string>e,Level.ERROR);
       } // not optimal, just suppressing exceptions (exceptions usually stem from quick navigation, so no biggie, but still.)
     });
 
@@ -68,12 +69,14 @@ export default class TabManager extends EventEmitter {
       await this.pageBootstrapper(popup);
     });
 
-    const injectedPages:Promise<void>[] = [];
+    const injectedScripts:Promise<void>[] = [];
     this.injections.forEach((script) => {
-      injectedPages.push(page.addInitScript(script));
+      injectedScripts.push(page.addInitScript(script));
+      logger("Injecting script!",Level.DEBUG);
     });
 
-    await Promise.all(injectedPages);
+    await Promise.all(injectedScripts);
+    logger("All scripts have been sideloaded!",Level.DEBUG);
 
     // Reload is needed for the injected scripts to get loaded (will this break anything?)
     await page.reload();
@@ -114,7 +117,7 @@ export default class TabManager extends EventEmitter {
   public async newTab(url? : string) : Promise<void> {
     if (this.browser.contexts().length === 0) {
       // For freshly created (or recycled) browser without context
-      console.log('Creating new context...');
+      logger('Creating new context...', Level.DEBUG);
       await this.browser.newContext({ locale: 'en-GB' });
     }
 
@@ -160,8 +163,10 @@ export default class TabManager extends EventEmitter {
     this.injections.push(arg);
 
     const injectedPages : Promise<Response | null>[] = [];
+    logger("Injecting new script!", Level.DEBUG);
     this.pages.forEach((page) => {
       injectedPages.push(page.addInitScript(arg).then(() => page.reload()));
+      logger(`Injecting script to page ${page.tabName}!`,Level.DEBUG);
     });
 
     await Promise.all(injectedPages);
