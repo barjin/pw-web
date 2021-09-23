@@ -1,9 +1,10 @@
 /* eslint-disable max-len */
 import { chromium, Page, Browser } from 'playwright';
-import Logger, {Level} from 'pwww-shared/Logger';
+import logger, {Level} from 'pwww-shared/Logger';
 
 import * as types from 'pwww-shared/Types';
 import ws from 'ws';
+import Rerep from 'pwww-shared/rerepl';
 
 import TabManager from './TabManager';
 
@@ -26,7 +27,7 @@ export default class BrowserSession {
   /**
  * Stores pending tasks, used for task execution serialization.
  */
-  private messageQueue : types.WSMessage<types.Action>[] = [];
+  private messageQueue : {resolve: (response: Object) => void, task: types.Action}[] = [];
 
   /**
  * Sets the minimal delay between two different tasks being executed.
@@ -36,27 +37,24 @@ export default class BrowserSession {
   private playbackDelay = 1000;
 
   /**
- * Websockets connection used for signalling and action scheduling.
+ * Rerep object for maintaining connection to the frontend app.
  */
-  private messagingChannel : ws;
-
-  /**
- * Websockets connection used for image data requests / transfer.
-*/
-  private streamingChannel : ws;
+  private rerep : Rerep;
 
   /**
  * @summary BrowserSession constructor
- * @description Stores given WS connections and binds the message event callbacks for both of them.
- * @param messagingChannel WS connection for handling text commands.
- * @param streamingChannel WS connection for handling image stream.
+ * @description Stores given WS connections and binds the message event callbacks.
+ * @param wsConnection WS connection for handling text commands.
  */
-  constructor(messagingChannel : ws, streamingChannel : ws) {
-    this.messagingChannel = messagingChannel;
-    this.streamingChannel = streamingChannel;
+  constructor(wsConnection : WebSocket) {
+    this.rerep = new Rerep(wsConnection);
 
-    messagingChannel.on('message', (message: string) => this.enqueueTask(JSON.parse(message)));
-    streamingChannel.on('message', (message: string) => this.requestScreenshot(JSON.parse(message)));
+    this.rerep.addEventListener('request', async (e) => 
+    {
+      return await new Promise(res => {
+        this.enqueueTask({resolve: res, task: <types.Action><unknown>e});
+      });
+    });
   }
 
   /**
@@ -78,8 +76,8 @@ export default class BrowserSession {
  * Spawns a new instance of the Chromium browser with a TabManager, binds all the necessary event listeners and opens a new (blank) tab - this also creates a new browser context.
  */
   private async initialize() : Promise<void> {
-    Logger('Initializing browser...',Level.DEBUG);
-    this.browser = <Browser>(await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] } : {}));
+    logger('Initializing browser...',Level.DEBUG);
+    this.browser = <Browser>(await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] } : {headless: false}));
     
     this.close = (() => {
       if(this.browser){
@@ -99,7 +97,7 @@ export default class BrowserSession {
 
     await this.tabManager.injectToAll({ path: `${__dirname}/ExtractSelector.js` });
 
-    Logger('Opening new tab...', Level.DEBUG);
+    logger('Opening new tab...', Level.DEBUG);
     await this.tabManager.newTab();
   }
 
@@ -110,7 +108,7 @@ export default class BrowserSession {
  */
   private sendToClient = (...data: string[]) => {
     data.forEach((element) => {
-      this.messagingChannel.send(element);
+      // this.messagingChannel.send(element);
     });
   };
 
@@ -131,12 +129,12 @@ export default class BrowserSession {
         fullPage: true,
       })
         .then((buffer) => {
-          this.signalCompletion(message, this.streamingChannel);
-          this.streamingChannel.send(buffer);
+          // this.signalCompletion(message, this.streamingChannel);
+          // this.streamingChannel.send(buffer);
         })
-        .catch((e) => this.signalError(message, e.message, this.streamingChannel));
+        // .catch((e) => this.signalError(message, e.message, this.streamingChannel));
     } else {
-      Logger('[PWWW] Browser is not running, cannot send screenshot!', Level.ERROR);
+      logger('[PWWW] Browser is not running, cannot send screenshot!', Level.ERROR);
     }
   }
 
@@ -146,7 +144,7 @@ export default class BrowserSession {
  * @param e Reason of the error
  * @param channel Optional, WS connection to send the message to. Default - messagingChannel.
  */
-  private signalError(message : types.WSMessage<unknown>, e: string, channel : ws = this.messagingChannel) : void {
+  private signalError(message : types.WSMessage<unknown>, e: string, channel : ws) : void {
     channel.send(JSON.stringify({
       responseID: message.messageID,
       error: true,
@@ -159,7 +157,7 @@ export default class BrowserSession {
  * @param message Initial request message
  * @param channel Optional, WS connection to send the message to. Default - messagingChannel.
  */
-  private signalCompletion(message : types.WSMessage<unknown>, channel : ws = this.messagingChannel) : void {
+  private signalCompletion(message : types.WSMessage<unknown>, channel : ws) : void {
     channel.send(JSON.stringify({
       responseID: message.messageID,
       payload: message.payload,
@@ -187,10 +185,10 @@ export default class BrowserSession {
 
       task.data.selector = selectorObj.semanticalSelector;
     } catch (e) {
-      Logger(<string>e, Level.ERROR);
+      logger(<string>e, Level.ERROR);
       throw e;
     }
-    Logger(`Clicked on ${task.data.selector}`, Level.DEBUG);
+    logger(`Clicked on ${task.data.selector}`, Level.DEBUG);
   }
   if (task.data.selector) {
     await this.currentPage.click(task.data.selector, { timeout: 5000 });
@@ -206,7 +204,7 @@ export default class BrowserSession {
     .then(() => task.data.url)
     .catch(async () => {
       const queryURL = `https://duckduckgo.com/?q=${encodeURIComponent(task.data.url)}`;
-      Logger(`Browsing to ${queryURL}...`, Level.DEBUG);
+      logger(`Browsing to ${queryURL}...`, Level.DEBUG);
       await this.currentPage.goto(queryURL);
       return queryURL;
     });
@@ -313,29 +311,34 @@ async (task) => {
     }
 
     while (this.messageQueue.length !== 0) {
-      const task = this.messageQueue.shift();
+      const newTask = this.messageQueue.shift();
+
+      if(!newTask){
+        throw new Error('Empty task!');
+      }
+      const {resolve, task} = newTask;
 
       // Validate payload type here????
 
-      if (!task || !(task.payload.type in actionList)) {
-        Logger(`[PWWW] Invalid task type! ${JSON.stringify(task)}`,Level.ERROR);
+      if (!task || !(task.type in actionList)) {
+        logger(`[PWWW] Invalid task type! ${JSON.stringify(task)}`,Level.ERROR);
       } else {
-        Logger(`[PWWW] Executing ${task.payload.type}...`,Level.DEBUG);
+        logger(`[PWWW] Executing ${task.type}...`,Level.DEBUG);
 
         Promise.all(
           [
             // Runs task and delay timer simultaneously - if task takes a lot of time, its execution time gets deducted from the delay as well.
             // Slows the playback down, giving user some time to understarnd the playback flow.
-            actionList[task.payload.type](task.payload),
+            actionList[task.type](task),
             this.playbackDelay ? new Promise((resolve) => setTimeout(resolve, this.playbackDelay)) : null,
           ],
         )
-          .then(async () => {
+          .then(async ([response]) => {
             await this.currentPage.waitForLoadState();
-            this.signalCompletion(task);
+            resolve(response);
           })
           .catch((e) => {
-            this.signalError(task, e.message);
+            // this.signalError(task, e.message);
           });
       }
     }
@@ -347,8 +350,8 @@ async (task) => {
 * Pushes the new messages into the messageQueue, checks if processTasks() is already running - if not, it starts the processing.
 * @param task - New task object
 */
-  public enqueueTask = (task: types.WSMessage<types.Action>) : void => {
-    this.messageQueue.push(task);
+  public enqueueTask = (args: {resolve: () => void, task: types.Action}) : void => {
+    this.messageQueue.push(args);
     if (this.messageQueue.length === 1) {
       this.processTasks();
     }

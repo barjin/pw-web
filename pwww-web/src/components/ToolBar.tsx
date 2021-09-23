@@ -11,6 +11,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import React, { useState } from 'react';
 
 import * as types from 'pwww-shared/Types';
+import RemoteBrowser from '../RemoteBrowser';
 
 interface IBrowserTabProps{
   title : string,
@@ -47,7 +48,7 @@ BrowserTab.defaultProps = {
 };
 
 interface ITabBarProps{
-  callback : ToolBarProps['navigationCallback']
+  browser : ToolBarProps['browser']
   tabState: types.AppState['TabState'];
 }
 
@@ -59,28 +60,15 @@ interface ITabBarProps{
  * @returns The rendered tab bar.
  */
 function TabBar(props: ITabBarProps) {
-  const tabClick = (id: number) => {
-    props.callback(
-      types.BrowserAction.switchTabs,
-      { currentTab: id },
-    );
-  };
+  const tabClick = (id: number) => props.browser.switchTab(id);
 
-  const addTab = () => {
-    props.callback(
-      types.BrowserAction.openTab,
-      {},
-    );
-  };
+  const addTab = () => props.browser.openTab();
 
   const closeTab = (id: number) => {
     if (props.tabState.tabs.length === 1) {
       return;
     }
-    props.callback(
-      types.BrowserAction.closeTab,
-      { closing: id },
-    );
+    props.browser.closeTab(id);
   };
 
   const { tabState } = props;
@@ -108,7 +96,8 @@ function TabBar(props: ITabBarProps) {
 
 type ToolBarProps = {
   tabState: types.AppState['TabState'],
-  navigationCallback : (action : types.BrowserAction, data: Record<string, unknown>) => void
+  browser : RemoteBrowser,
+  goto: (url: string)=>void
 };
 
 /**
@@ -117,27 +106,17 @@ type ToolBarProps = {
  * @returns The rendered toolbar.
  */
 export default function ToolBar(props: ToolBarProps) : JSX.Element {
-  const navigate = (ev : React.MouseEvent<HTMLElement>) : void => {
-    if (ev.currentTarget !== null) {
-      props.navigationCallback(
-        types.BrowserAction.navigate,
-        { back: ((ev.currentTarget as HTMLElement).id === 'nav_back') },
-      );
-    }
-  };
-
+  const { tabState, browser } = props;
   const [address, setAddress] = useState('');
+
+  // eslint-disable-next-line
+  const navigate = (back: boolean) : (ev: MouseEvent) => Promise<Object> => ((back) ? () => browser.goBack() : () => browser.goForward());
 
   const browse = (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
-    props.navigationCallback(
-      types.BrowserAction.browse,
-      { url: address },
-    );
+    browser.goto(address);
     (document.getElementById('addressBar') as HTMLInputElement).value = '';
   };
-
-  const { tabState, navigationCallback } = props;
 
   return (
     <>
@@ -146,8 +125,8 @@ export default function ToolBar(props: ToolBarProps) : JSX.Element {
           <InputGroup>
             <InputGroup.Prepend>
               <ButtonGroup>
-                <Button id="nav_back" onClick={navigate}>&lt;</Button>
-                <Button id="nav_forward" onClick={navigate}>&gt;</Button>
+                <Button id="nav_back" onClick={navigate(true) as any}>&lt;</Button>
+                <Button id="nav_forward" onClick={navigate(false) as any}>&gt;</Button>
               </ButtonGroup>
             </InputGroup.Prepend>
             <>
@@ -157,7 +136,7 @@ export default function ToolBar(props: ToolBarProps) : JSX.Element {
           </InputGroup>
         </Form>
       </Row>
-      <TabBar tabState={tabState} callback={navigationCallback} />
+      <TabBar tabState={tabState} browser={browser} />
     </>
   );
 }

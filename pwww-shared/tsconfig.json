@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+      "module": "CommonJS",
+      "removeComments": true,
+      "target": "ES2020",
+	   "esModuleInterop": true,
+      "skipLibCheck": true,
+      "importsNotUsedAsValues": "remove",
+	  "strict": true
+    }
+}
