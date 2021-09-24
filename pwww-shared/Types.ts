@@ -1,19 +1,20 @@
 export enum BrowserAction {
     'click',
-    'browse',
+    'goto',
     'insertText',
-    'navigate',
-    'codeblock',
-
-    'read',
-    'screenshot',
-
+    'goBack',
+    'goForward',
     'openTab',
     'switchTabs',
     'closeTab',
 
     'reset',
-    'noop'
+    'noop',
+
+    'codeblock',
+
+    'read',
+    'screenshot',
 }
 
 export type Action = {

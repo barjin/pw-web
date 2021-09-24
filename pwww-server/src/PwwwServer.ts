@@ -44,8 +44,8 @@ class PWWWServer {
  * @param messagePort (number) - port for the WS message channels
  * @param httpPort (number) - port for the HTTP server (serves web app and REST API)
  */
-  constructor(messagePort: number, httpPort: number) {
-    this.cmdServer = new ws.Server({ port: messagePort });
+  constructor(httpPort: number) {
+    this.cmdServer = new ws.Server({ noServer: true, path: '/ws' });
     this.httpPort = httpPort;
   }
 
@@ -84,54 +84,24 @@ class PWWWServer {
           logger(`[${this.sessions.length}/${process.env.PWWW_MAX_SESSIONS || 5}] Session ${token.substring(0, 7)} closed.`);
         });
 
-        // ERASE THIS!
-        conn.addEventListener('message', (ev) => {
-          logger(`Incoming message: ${ev.data}`, Level.DEBUG);
-        });
-
         logger(`[${this.sessions.length}/${process.env.PWWW_MAX_SESSIONS || 5}] Session ${token.substring(0, 7)} created.`);
       }
     });
 
-    // this.streamServer.on('connection', (conn : ws) => {
-    //   conn.on('message', (message: string) => {
-    //     const obj = JSON.parse(message);
-    //     if (obj.token) {
-    //       const idx = this.sessions.findIndex(
-    //         (sess) => (sess.token === obj.token && !(sess.streamConn)),
-    //       );
-
-    //       if (idx === -1) {
-    //         PWWWServer.errorAndClose(conn);
-    //       } else {
-    //         const sess = this.sessions[idx];
-
-    //         sess.streamConn = conn;
-    //         sess.browserSession = 
-    //       }
-    //     }
-    //   });
-    // });
-
-    const httpServer = new HTTPServer();
+    const httpServer = new HTTPServer(this.cmdServer);
     httpServer.StartServer(this.httpPort);
   }
 }
 
 yargs(hideBin(process.argv)) // eslint-disable-line @typescript-eslint/no-unused-expressions
   .command(['$0', 'start'], 'Starts the PWWW server', (ags) => ags
-    .option('messagePort', {
-      describe: 'Websockets port for server-client signalling',
-      type: 'number',
-      default: 8080,
-    })
-    .option('httpPort', {
-      describe: 'HTTP port for serving frontend',
+    .option('appPort', {
+      describe: 'Port to run the app on',
       type: 'number',
       default: 8000,
     }), (argv) => {
-    const server = new PWWWServer(argv.messagePort, argv.httpPort);
+    const server = new PWWWServer(argv.appPort);
     server.StartServer();
     
-    logger(`Server is running on ports ${argv.messagePort} (WebSockets)...`);
+    logger(`Server is running on port ${argv.appPort}...`);
   }).argv;

@@ -44,21 +44,9 @@ export default class StreamWindow extends Component<any, any> {
         // ev.preventDefault();
       });
 
-      canvas.addEventListener('wheel', () => {
-        // const heightBackup = this.scrollHeight;
-        // this.scrollHeight += (ev.deltaY * VIEWPORT_H) / (this.canvas.current?.height || 1);
-        // this.scrollHeight = (this.scrollHeight < 0) ? 0 : this.scrollHeight;
-
-        // if (this.scrollHeight > ((this.screenBuffer.length - 2) * VIEWPORT_H)) { // always keeping at least 1 screen in advance
-        //   this.requestScreenshot(this.screenBuffer.length);
-        // }
-
-        // if (this.scrollHeight > VIEWPORT_H * (this.screenBuffer.length - 1)) { // when at the bottom of the page, this stops user from completely drifting away
-        //   this.scrollHeight = heightBackup;
-        // }
-
-        // this.flushBuffer();
-        // ev.preventDefault();
+      canvas.addEventListener('wheel', (ev) => {
+        this.browser.scroll(ev);
+        ev.preventDefault();
       });
 
       canvas.addEventListener('keydown', (ev) => {
@@ -93,7 +81,7 @@ export default class StreamWindow extends Component<any, any> {
 
       const img = new Image();
 
-      img.src = URL.createObjectURL(image);
+      img.src = URL.createObjectURL(new Blob([image]));
       img.onload = () => {
         URL.revokeObjectURL(img.src);
         ctx?.clearRect(0, 0, this.canvas.current?.width || 0, VIEWPORT_H || 0);

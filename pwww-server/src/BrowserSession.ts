@@ -7,6 +7,7 @@ import ws from 'ws';
 import Rerep from 'pwww-shared/rerepl';
 
 import TabManager from './TabManager';
+import { Protocol } from 'playwright/types/protocol';
 
 /**
  * Main browser session class.
@@ -55,6 +56,10 @@ export default class BrowserSession {
         this.enqueueTask({resolve: res, task: <types.Action><unknown>e});
       });
     });
+
+    this.rerep.addEventListener('misc', async (e) => {
+      this.tabManager?.sendCDP('Input.dispatchMouseEvent', (<any>e).payload);
+    });
   }
 
   /**
@@ -77,7 +82,7 @@ export default class BrowserSession {
  */
   private async initialize() : Promise<void> {
     logger('Initializing browser...',Level.DEBUG);
-    this.browser = <Browser>(await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] } : {headless: false}));
+    this.browser = <Browser>(await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] } : {}));
     
     this.close = (() => {
       if(this.browser){
@@ -87,65 +92,21 @@ export default class BrowserSession {
         throw new Error('Cannot close nonexistent browser!');
       }
     });
+
+    const sendScreencast = (params: Protocol.Page.screencastFramePayload) => {
+      let buff = Buffer.from(params.data,'base64');
+      this.rerep.send(buff);
+    }
     
 
-    this.tabManager = await new TabManager(this.browser);
+    this.tabManager = await new TabManager(this.browser, sendScreencast);
 
-    this.tabManager.on('tabsUpdate', (newState) => {
-      this.sendToClient(JSON.stringify(newState));
-    });
+    this.tabManager.on('tabsUpdate', this.rerep.send);
 
     await this.tabManager.injectToAll({ path: `${__dirname}/ExtractSelector.js` });
 
     logger('Opening new tab...', Level.DEBUG);
     await this.tabManager.newTab();
-  }
-
-  /**
- * Helper function for sending any number of string messages to the connected client (using the associated messagingChannel)
- *
- * @param data String array to be sent to the client
- */
-  private sendToClient = (...data: string[]) => {
-    data.forEach((element) => {
-      // this.messagingChannel.send(element);
-    });
-  };
-
-  /**
- * Screenshot request handler - auto called by the web app (used mainly for scrolling functionality), not associated with the recordable screenshot action!
- *
- * Reads the request message and tries to take a screenshot of the current webpage. If it succeeds, sends "completion response" to the client using the streaming connection, followed by the binary data with the screenshot itself.
- * @param message WSMessage with the screenNumber (how many full "PageDowns" is the requested screen located)
- */
-  private sendScreencast(base64: string): void {
-
-  }
-
-  /**
- * Helper function for error signalling during the message-related request.
- * @param message Initial request message
- * @param e Reason of the error
- * @param channel Optional, WS connection to send the message to. Default - messagingChannel.
- */
-  private signalError(message : types.WSMessage<unknown>, e: string, channel : ws) : void {
-    channel.send(JSON.stringify({
-      responseID: message.messageID,
-      error: true,
-      errorMessage: e,
-    }));
-  }
-
-  /**
- * Helper function for signalling the completion of the message-related request.
- * @param message Initial request message
- * @param channel Optional, WS connection to send the message to. Default - messagingChannel.
- */
-  private signalCompletion(message : types.WSMessage<unknown>, channel : ws) : void {
-    channel.send(JSON.stringify({
-      responseID: message.messageID,
-      payload: message.payload,
-    }));
   }
 
   /**
@@ -182,7 +143,7 @@ export default class BrowserSession {
   throw new Error('Selector could not be generated!');
 }),
 
-      browse:
+      goto:
 (async (task) => {
   const url = await this.currentPage.goto(task.data.url)
     .then(() => task.data.url)
@@ -197,10 +158,14 @@ export default class BrowserSession {
   return task;
 }),
 
-      navigate:
+      goBack:
 async (task) => {
-  await (task.data.back ? this.currentPage.goBack() : this.currentPage.goForward());
-
+  await (this.currentPage.goBack());
+  return task;
+},
+      goForward:
+async (task) => {
+  await this.currentPage.goForward();
   return task;
 },
       codeblock:

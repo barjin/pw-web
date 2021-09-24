@@ -60,15 +60,15 @@ interface ITabBarProps{
  * @returns The rendered tab bar.
  */
 function TabBar(props: ITabBarProps) {
-  const tabClick = (id: number) => props.browser.switchTab(id);
+  const tabClick = (currentTab: number) => props.browser.switchTab({ currentTab });
 
   const addTab = () => props.browser.openTab();
 
-  const closeTab = (id: number) => {
+  const closeTab = (closing: number) => {
     if (props.tabState.tabs.length === 1) {
       return;
     }
-    props.browser.closeTab(id);
+    props.browser.closeTab({ closing });
   };
 
   const { tabState } = props;
@@ -97,7 +97,7 @@ function TabBar(props: ITabBarProps) {
 type ToolBarProps = {
   tabState: types.AppState['TabState'],
   browser : RemoteBrowser,
-  goto: (url: string)=>void
+  goto: (arg0: { url: string })=>void
 };
 
 /**
@@ -114,7 +114,7 @@ export default function ToolBar(props: ToolBarProps) : JSX.Element {
 
   const browse = (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
-    browser.goto(address);
+    browser.goto({ url: address });
     (document.getElementById('addressBar') as HTMLInputElement).value = '';
   };
 

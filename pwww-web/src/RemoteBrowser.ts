@@ -11,6 +11,7 @@ export default class RemoteBrowser {
 private rerep : Rerep | null = null;
 
 public screencastCallback: (data: Buffer) => void = () => {};
+public tabStateCallback: (data: types.AppState["TabState"]) => void = () => {};
 
 constructor() {
 }
@@ -24,12 +25,11 @@ private requestAction = (type: types.BrowserAction, params?: Object) : Promise<O
 }
 
 public connectToServer = (serverAddress: string, port: number) => {
-  const rerep = new Rerep(new WebSocket(`ws://${serverAddress}:${port}`));
-  rerep.send({ahoj: "ahoj"});
+  const rerep = new Rerep(new WebSocket(`ws://${serverAddress}:${port}/ws`));
 
   rerep.addEventListener('open', () => {
     this.rerep = rerep;
-    this.rerep.send({ type: 'noop' });
+    this.rerep.request({ type: 'reset' });
   });
 
   rerep.addEventListener('close', () => {
@@ -43,10 +43,13 @@ public connectToServer = (serverAddress: string, port: number) => {
     if ((<Message>message).header.format === 'B') {
       this.screencastCallback(<Buffer>(<Message>message).payload);
     }
+    else if ((<Message>message).header.format === 'J'){
+      this.tabStateCallback(<types.AppState["TabState"]>(<Message>message).payload);
+    }
   });
 }
 
-public reset = () => {
+public reset = (params?: {}) => {
   return this.requestAction(types.BrowserAction.reset, {});
 }
 
@@ -54,31 +57,36 @@ public click = (params: { x: number, y: number } | { selector : string }) => {
   return this.requestAction(types.BrowserAction.click, params);
 }
 
-public goto = (url: string) => {
-  return this.requestAction(types.BrowserAction.browse, { url });
+public goto = (params: {url: string}) => {
+  return this.requestAction(types.BrowserAction.goto, params);
 }
 
-public insertText = (text: string) => {
-  return this.requestAction(types.BrowserAction.insertText, { text });
+public insertText = (params: {text: string}) => {
+  return this.requestAction(types.BrowserAction.insertText, params);
 }
 
-public goBack = () => {
-  return this.requestAction(types.BrowserAction.navigate, { back: true });
+public goBack = (params?: {}) => {
+  return this.requestAction(types.BrowserAction.goBack, params);
 }
 
-public goForward = () => {
-  return this.requestAction(types.BrowserAction.navigate, { back: false });
+public goForward = (params?: {}) => {
+  return this.requestAction(types.BrowserAction.goForward, params);
 }
 
-public openTab = () => {
+public openTab = (params?: {}) => {
   return this.requestAction(types.BrowserAction.openTab);
 }
 
-public switchTab = (tabID: number) => {
-  return this.requestAction(types.BrowserAction.switchTabs, { currentTab: tabID });
+public switchTab = (params?: {currentTab: number}) => {
+  return this.requestAction(types.BrowserAction.switchTabs, params);
 }
 
-public closeTab = (tabID: number) => {
-  return this.requestAction(types.BrowserAction.closeTab, { closing: tabID });
+public closeTab = (params: {closing: number}) => {
+  return this.requestAction(types.BrowserAction.closeTab, params);
+}
+
+public scroll = (params: WheelEvent) => {
+  const {x,y,deltaX,deltaY,deltaZ} = params;
+  this.rerep?.send({type: 'mouseWheel',x,y,deltaX,deltaY,deltaZ});
 }
 }

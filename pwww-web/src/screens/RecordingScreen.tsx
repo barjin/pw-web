@@ -16,8 +16,6 @@ import RemoteBrowser from '../RemoteBrowser';
 import '../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const APP_PORT = 8080;
-
 interface IRecScreenProps {
   location: any // React Router location
 }
@@ -179,7 +177,9 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
     this.Browser = new Proxy(new RemoteBrowser(), {
       get: (o, key) => {
         const { RecordingState } = this.state;
-        if (!RecordingState.isRecording) {
+        const recordables = ['click', 'goto', 'goBack', 'goForward', 'openTab', 'switchTab', 'closeTab', 'insertText'];
+
+        if (RecordingState.isRecording && recordables.includes(key as string)) {
           return async (...args: any[]) => {
             const response = await (o[key as any] as ((...a: any[]) => any))(...args);
             if (response) {
@@ -239,7 +239,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
     switch (action) {
       case 'play':
         if (window.confirm('Starting the playback closes all open tabs. Do you want to proceed?')) {
-          this.playRecording().catch(() => {});
+          this.playRecording().catch(console.error);
         }
         break;
       case 'record':
@@ -260,7 +260,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
               ...prevState.RecordingState,
               isRecording: !prevState.RecordingState.isRecording,
             },
-          }))).catch(() => {}); // if playback fails, recording does not start.
+          }))).catch(console.error); // if playback fails, recording does not start.
         break;
       case 'step':
         if (RecordingState.playback === 'step') {
@@ -285,8 +285,9 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
   private streamSetup = () => {
     if (this.canvas.current) {
       // const { RecordingState } = this.state;
-      this.Browser.connectToServer(window.location.hostname, APP_PORT);
+      this.Browser.connectToServer(window.location.hostname, parseInt(window.location.port, 10));
       this.Browser.screencastCallback = this.canvas.current.DrawImage;
+      this.Browser.tabStateCallback = (tabs) => this.setState({ TabState: tabs });
     } else {
       throw new Error('The canvas is not ready.');
     }
@@ -358,7 +359,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
           }
         ));
         return Promise.all([
-          (this.Browser[action.type] as (...args: any[]) => Promise<Record<string, unknown>>)(...action.data),
+          (this.Browser[action.type] as (...args: any[]) => Promise<Record<string, unknown>>)(action.data),
           RecordingState.playback === 'step' ? this.stepper() : Promise.resolve(),
           this.stop(),
         ]);
@@ -393,7 +394,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
   private insertText = () => {
     const text = prompt('Enter text to paste to the website:');
     if (text !== null && text !== '') {
-      this.Browser.insertText(text);
+      this.Browser.insertText({ text });
     }
   };
 

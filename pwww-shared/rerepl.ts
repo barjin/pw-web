@@ -61,7 +61,7 @@ export default class Rerep {
    * Listener function handling the incoming messages (no response expected).
    * Should have side effects (duh, it's void).
    */
-  private msgHandler : (arg0 : Message['payload']) => void = () => {};
+  private msgHandler : (arg0 : Message) => void = () => {};
 
   /**
    * Listener function handling the incoming responses (to previously made requests).
@@ -126,7 +126,7 @@ export default class Rerep {
 * @param data - Arbitrary data to be sent over the WebSockets channel.
 * @param header - Optional header parameter for sending request-response messages.
 */
-  public send (data: Message['payload'], header : Message['header'] = this.getHeader(Type.MSG, data.constructor.name === 'Object' ? 'J' : 'B')) : void {
+  public send = (data: Message['payload'], header : Message['header'] = this.getHeader(Type.MSG, data.constructor.name === 'Object' ? 'J' : 'B')) : void => {
     const headerEnc = new TextEncoder().encode(`REREP ${Type[header.type]}${(header.type !== Type[Type.MSG]) ? ` ${header.id} ` : ' '}${header.format}\n`);
 
     const encData : String|Uint8Array = data.constructor.name === 'Object' ? new TextEncoder().encode(JSON.stringify(data)) : <any>data;
