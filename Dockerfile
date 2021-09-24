@@ -15,8 +15,8 @@ WORKDIR /root
 
 COPY "checkForUpdates.js" "."
 COPY "run.sh" "."
-RUN mkdir dataStore
-COPY "dataStore" "./dataStore"
+# RUN mkdir dataStore	
+# COPY "dataStore" "./dataStore"
 
 RUN chmod +x ./run.sh
 
