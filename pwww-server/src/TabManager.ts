@@ -1,8 +1,11 @@
 /* eslint-disable max-len */
 import EventEmitter from 'events';
-import { Browser, Page, Response } from 'playwright';
+import { Browser, CDPSession, Page, Response } from 'playwright';
+import { Protocol } from 'playwright/types/protocol';
 import logger, { Level } from 'pwww-shared/logger';
 
+
+type NamedPage = Page & {tabName?: string};
 /**
  * Class for handling the browser tab management.
  */
@@ -20,26 +23,79 @@ export default class TabManager extends EventEmitter {
   /**
  * Playwright Page object exposing the currently selected page.
  */
-  public currentPage : Page|null = null;
+  public _currentPage : Page|null = null; // eslint-disable-line
 
   /**
- * Constructor for the TabManager class
- * @param browser Sessions Playwright Browser object
- */
-  constructor(browser : Browser) {
-    super();
-    this.browser = browser;
-  }
+     * Callback function to be called with any new screencast frame.
+     */
+   private screencastCallback : Function;
 
-  /**
- * Getter method for listing all the managed tabs (Playwright Page objects) in all contexts.
- * @returns List of currently active tabs / pages.
-*/
-  private get pages() : (Page & { tabName?: string })[] {
-    return this.browser.contexts()
-      .map((context) => context.pages())
-      .reduce((acc, pages) => [...acc, ...pages], []);
-  }
+   private cdpSession : CDPSession|null = null;
+   private frameDropper: NodeJS.Timer|null = null;
+
+   /**
+    * Constructor for the TabManager class
+    * @param browser Sessions Playwright Browser object
+    */
+   constructor(browser : Browser, screencastCallback : Function){
+       super();
+       this.browser = browser;
+       this.screencastCallback = screencastCallback;
+   }
+
+   /**
+    * Getter method for listing all the managed tabs (Playwright Page objects) in all contexts.
+    * @returns List of currently active tabs / pages.
+   */
+   private get pages() : NamedPage[]{
+     return this.browser.contexts()
+     .map(context => context.pages())
+     .reduce((acc,pages) => [...acc,...pages], [])
+   }
+
+   public set currentPage(value: Page) {
+       if(this.frameDropper){
+           clearInterval(this.frameDropper);
+       }
+
+       this._currentPage = value;
+       (async () => {
+           this.cdpSession = <CDPSession>(await this.currentPage.context().newCDPSession(this.currentPage));
+           await this.cdpSession.send("Page.startScreencast",{format: 'jpeg', quality: 20});
+
+           let lastFrame : Protocol.Page.screencastFramePayload|null;
+           this.cdpSession.on('Page.screencastFrame',async(params) => {
+               lastFrame = params;
+               try{
+                   await this.cdpSession?.send('Page.screencastFrameAck',{sessionId: params.sessionId});
+               }
+               catch(e){
+                   console.error(e);
+               }
+               
+           });
+
+           this.frameDropper = setInterval(() => {
+               // CDP's Page.screencast sends screenshot with every rerender(?). On visual-heavy pages (e.g. with videos or animations), this can lead to 
+               // connection choking and serious memory leaks at the client side (depends on the client's browser's garbage collection).
+               // Also probably saves some money on the bandwidth fees :)
+               if(lastFrame){
+                   this.screencastCallback(lastFrame);
+                   lastFrame = null;
+               }
+           },200);
+       })();
+   }
+
+   public get currentPage() : Page{
+       return <any>this._currentPage;
+   }
+
+   public sendCDP(command: any, params: Object){
+       if(this.cdpSession){
+           this.cdpSession.send(command, params);
+       }
+   }
 
   /**
  * Helper method for emiting the "tabsUpdate" event (listened to by BrowserSession) with the list of all tabs.
@@ -53,7 +109,7 @@ export default class TabManager extends EventEmitter {
  * @param page Current page to be bootstrapped.
  * @returns Promise gets resolved after the given page is bootstrapped with the specified scripts.
  */
-  private async pageBootstrapper(page : Page & { tabName?: string }) : Promise<void> {
+  private async pageBootstrapper(page : NamedPage) : Promise<void> {
     page.tabName = 'Loading...';
 
     page.on('domcontentloaded', async () => {
@@ -89,7 +145,7 @@ export default class TabManager extends EventEmitter {
   public listAllTabs() : { currentTab: number, tabs: string[] } {
     const currentTab = this.pages.findIndex((page) => page === this.currentPage);
 
-    const tabList = this.pages.map((page) => <string>page.tabName);
+    const tabList = this.pages.map((page) => <string>(page.tabName));
 
     return { currentTab, tabs: tabList };
   }

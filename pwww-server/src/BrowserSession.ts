@@ -118,24 +118,8 @@ export default class BrowserSession {
  * Reads the request message and tries to take a screenshot of the current webpage. If it succeeds, sends "completion response" to the client using the streaming connection, followed by the binary data with the screenshot itself.
  * @param message WSMessage with the screenNumber (how many full "PageDowns" is the requested screen located)
  */
-  private async requestScreenshot(message: types.WSMessage<{ screenNumber: number }>): Promise<void> {
-    if (this.browser !== null && this.browser.isConnected()) {
-      this.currentPage.screenshot({
-        type: 'jpeg',
-        quality: 20,
-        clip: {
-          x: 0, y: message.payload.screenNumber * 720, width: 1280, height: 720,
-        },
-        fullPage: true,
-      })
-        .then((buffer) => {
-          // this.signalCompletion(message, this.streamingChannel);
-          // this.streamingChannel.send(buffer);
-        })
-        // .catch((e) => this.signalError(message, e.message, this.streamingChannel));
-    } else {
-      logger('[PWWW] Browser is not running, cannot send screenshot!', Level.ERROR);
-    }
+  private sendScreencast(base64: string): void {
+
   }
 
   /**
