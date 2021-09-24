@@ -6,7 +6,7 @@ import ws, { Server } from 'ws';
 
 import BrowserSession from './BrowserSession';
 import HTTPServer from './http-server/HTTPServer.js';
-import logger, {Level} from 'pwww-shared/logger';
+import logger, {Level} from 'pwww-shared/Logger';
 
 /**
  * Main server class, manages browser sessions, runs the HTTP server.

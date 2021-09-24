@@ -2,7 +2,7 @@
 import EventEmitter from 'events';
 import { Browser, CDPSession, Page, Response } from 'playwright';
 import { Protocol } from 'playwright/types/protocol';
-import logger, { Level } from 'pwww-shared/logger';
+import logger, { Level } from 'pwww-shared/Logger';
 
 
 type NamedPage = Page & {tabName?: string};
