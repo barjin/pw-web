@@ -8,6 +8,7 @@ import Rerep from 'pwww-shared/rerepl';
 
 import TabManager from './TabManager';
 import { Protocol } from 'playwright/types/protocol';
+import { rejects } from 'assert';
 
 /**
  * Main browser session class.
@@ -28,7 +29,7 @@ export default class BrowserSession {
   /**
  * Stores pending tasks, used for task execution serialization.
  */
-  private messageQueue : {resolve: (response: Object) => void, task: types.Action}[] = [];
+  private messageQueue : {resolve: (response: Object) => void, reject: typeof Promise.reject, task: types.Action}[] = [];
 
   /**
  * Sets the minimal delay between two different tasks being executed.
@@ -52,8 +53,8 @@ export default class BrowserSession {
 
     this.rerep.addEventListener('request', async (e) => 
     {
-      return await new Promise(res => {
-        this.enqueueTask({resolve: res, task: <types.Action><unknown>e});
+      return await new Promise((res,rej) => {
+        this.enqueueTask({resolve: res, reject: <any>rej, task: <types.Action><unknown>e});
       });
     });
 
@@ -161,12 +162,12 @@ export default class BrowserSession {
       goBack:
 async (task) => {
   await (this.currentPage.goBack());
-  return task;
+  return {...task, data: {}};
 },
       goForward:
 async (task) => {
   await this.currentPage.goForward();
-  return task;
+  return {...task, data: {}};
 },
       codeblock:
 async (task) => {
@@ -265,7 +266,7 @@ async (task) => {
       if(!newTask){
         throw new Error('Empty task!');
       }
-      const {resolve, task} = newTask;
+      const {resolve, reject, task} = newTask;
 
       // Validate payload type here????
 
@@ -286,8 +287,9 @@ async (task) => {
             await this.currentPage.waitForLoadState();
             resolve(response);
           })
-          .catch((e) => {
-            // this.signalError(task, e.message);
+          .catch((e : Error) => {
+            logger(e);
+            reject({error: e.message});
           });
       }
     }
@@ -299,7 +301,7 @@ async (task) => {
 * Pushes the new messages into the messageQueue, checks if processTasks() is already running - if not, it starts the processing.
 * @param task - New task object
 */
-  public enqueueTask = (args: {resolve: () => void, task: types.Action}) : void => {
+  public enqueueTask = (args: {resolve: () => void, reject: typeof Promise.reject, task: types.Action}) : void => {
     this.messageQueue.push(args);
     if (this.messageQueue.length === 1) {
       this.processTasks();

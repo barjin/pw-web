@@ -39,6 +39,7 @@ public connectToServer = (serverAddress: string, port: number) => {
   rerep.addEventListener('response', (payload : Message['payload']) => { 
     return !(<any>payload).error; 
   });
+  
   rerep.addEventListener('misc', (message : any) => {
     if ((<Message>message).header.format === 'B') {
       this.screencastCallback(<Buffer>(<Message>message).payload);

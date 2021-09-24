@@ -239,7 +239,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
     switch (action) {
       case 'play':
         if (window.confirm('Starting the playback closes all open tabs. Do you want to proceed?')) {
-          this.playRecording().catch(console.error);
+          this.playRecording().catch();
         }
         break;
       case 'record':
@@ -370,7 +370,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
             RecordingState: {
               ...prevState.RecordingState,
               playback: null,
-              playbackError: e.message,
+              playbackError: e.error,
             },
           }
         ));

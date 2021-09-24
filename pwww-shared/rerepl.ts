@@ -193,7 +193,13 @@ export default class Rerep {
         break;
       }
       case Type.REQ: {
-        const response = await this.reqHandler(parsedMessage.payload);
+        let response = null;
+        try{
+          response = await this.reqHandler(parsedMessage.payload);
+        }
+        catch(e){
+          response = <any>e;
+        }
         this.send(
           response,
           {
