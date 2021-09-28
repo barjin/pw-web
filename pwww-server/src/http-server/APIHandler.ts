@@ -6,6 +6,7 @@ import Logger, {Level} from 'pwww-shared/Logger';
 import type { Request, Response } from 'express';
 
 import * as paths from '../Paths';
+import { ESRCH } from 'constants';
 /**
  * Helper class, encapsulates the REST API related methods (routers, request handlers etc.)
  */
@@ -188,6 +189,7 @@ export default class APIHandler {
 */
   routeAPIGetRequest = (req : Request, res: Response) : void => {
     Logger(`[REST] GET request at ${req.path}`);
+    res.header("Content-type", "application/json");
 
     switch (req.path) {
       case '/api/recordings':
@@ -211,6 +213,7 @@ export default class APIHandler {
 */
   routeAPIPostRequest = (req : Request, res: Response) : void => {
     Logger(`[REST] POST request at ${req.path}`);
+    res.header("Content-type", "application/json");
 
     switch (req.path) {
       case '/api/renameRecording':
