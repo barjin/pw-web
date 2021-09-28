@@ -28,7 +28,7 @@ private requestAction = (type: types.BrowserAction, params?: Object) : Promise<O
 }
 
 public connectToServer = (serverAddress: string, port: number) => {
-  const rerep = new Rerep(new WebSocket(`ws://${serverAddress}:${port}/ws`));
+  const rerep = new Rerep(new WebSocket(`${window.location.protocol === "https" ? "wss" : "ws"}://${serverAddress}:${port}/ws`));
 
   rerep.addEventListener('open', () => {
     this.rerep = rerep;
