@@ -39,9 +39,9 @@ export default class StreamWindow extends Component<any, any> {
         }
       });
 
-      canvas.addEventListener('contextmenu', () => {
-        // this.browser.re(types.BrowserAction.read, this.getClickPos(ev));
-        // ev.preventDefault();
+      canvas.addEventListener('contextmenu', (ev) => {
+        this.browser.read(this.getClickPos(ev));
+        ev.preventDefault();
       });
 
       canvas.addEventListener('wheel', (ev) => {

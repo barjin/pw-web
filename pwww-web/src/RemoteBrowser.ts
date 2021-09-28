@@ -5,6 +5,9 @@ Shielding the frontend developer from the "low level" communication with the str
 import Rerep, { Message } from 'pwww-shared/rerepl';
 import * as types from 'pwww-shared/Types';
 
+
+type ClickParams = { x: number, y: number } | { selector : string };
+
 export default class RemoteBrowser {
 [key: string]: Function|typeof this.rerep;
 
@@ -54,7 +57,7 @@ public reset = (params?: {}) => {
   return this.requestAction(types.BrowserAction.reset, {});
 }
 
-public click = (params: { x: number, y: number } | { selector : string }) => {
+public click = (params: ClickParams) => {
   return this.requestAction(types.BrowserAction.click, params);
 }
 
@@ -86,8 +89,17 @@ public closeTab = (params: {closing: number}) => {
   return this.requestAction(types.BrowserAction.closeTab, params);
 }
 
+public read = (params: ClickParams) => {
+  return this.requestAction(types.BrowserAction.read, params);
+}
+
 public scroll = (params: WheelEvent) => {
   const {x,y,deltaX,deltaY,deltaZ} = params;
   this.rerep?.send({type: 'mouseWheel',x,y,deltaX,deltaY,deltaZ});
 }
+
+public highlight = (selector: string) => {
+  this.rerep?.send({type: 'highlight', data: {selector: selector}});
+}
+
 }

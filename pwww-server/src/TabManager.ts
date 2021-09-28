@@ -83,7 +83,7 @@ export default class TabManager extends EventEmitter {
                    this.screencastCallback(lastFrame);
                    lastFrame = null;
                }
-           },200);
+           },100);
        })();
    }
 

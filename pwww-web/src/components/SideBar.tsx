@@ -1,4 +1,4 @@
-/* eslint-disable max-len */
+/* eslint-disable */
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 
@@ -195,6 +195,11 @@ function CodeBlock(props : {
           {/* eslint-enable no-nested-ternary */}
         </Alert.Heading>
         <ButtonToolbar>
+          {
+            action.data.selector
+              ? <Button onClick={() => {(window as any).Browser.highlight(action.data.selector)}} variant="outline-primary">🔮</Button>
+              : null
+          }
           <Button onClick={editBlock} variant="outline-primary">✏</Button>
           <Button onClick={deleteBlock} variant="outline-danger">❌</Button>
         </ButtonToolbar>
@@ -255,11 +260,13 @@ function CodeEditModal(props : {
                     <FormLabel>
                       {attr}
                     </FormLabel>
-                    <FormControl
-                      as={(action.type as any) === 'codeblock' ? 'textarea' : 'input'}
-                      onChange={(ev) => { action.data[attr] = ev.target.value; }}
-                      defaultValue={action.data[attr]}
-                    />
+                    <FormGroup as={Row}>
+                      <FormControl
+                        as={(action.type as any) === 'codeblock' ? 'textarea' : 'input'}
+                        onChange={(ev) => { action.data[attr] = ev.target.value; }}
+                        defaultValue={action.data[attr]}
+                      />
+                    </FormGroup>
                   </FormGroup>
                 ),
               )}
@@ -377,13 +384,13 @@ export default function SideBar(props : SideBarProps) : JSX.Element {
             }}
             variant={isPlaybackRunning ? 'dark' : 'light'}
           >
-            {(!isPlaybackRunning) ? 'Play' : 'Stop'}
+            {(!isPlaybackRunning) ? '▶️' : '🛑'}
           </Button>
-          <Button key={3} onClick={() => control('step')} variant={isPlaybackRunning ? 'dark' : 'light'} disabled={recordingState.playback === 'cont'}>{isPlaybackRunning ? 'Next step' : 'Step by Step' }</Button>
+          <Button key={3} onClick={() => control('step')} variant={isPlaybackRunning ? 'dark' : 'light'} disabled={recordingState.playback === 'cont'}>{isPlaybackRunning ? '➡️' : '🦶' }</Button>
           <Button key={1} onClick={() => control('record')} variant={recordingState.isRecording ? 'dark' : 'light'}>
-            {!recordingState.isRecording ? 'Start recording' : 'Stop recording'}
+            {!recordingState.isRecording ? '🎦' : '⏹️'}
           </Button>
-          <Button key={2} onClick={() => setDownloadModal(true)} variant="light">Download</Button>
+          <Button key={2} onClick={() => setDownloadModal(true)} variant="light">📥</Button>
         </Col>
       </Row>
       <Row>

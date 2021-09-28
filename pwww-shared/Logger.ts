@@ -10,8 +10,8 @@ export enum Level{
 }
 
 export default function logger(message: string|Error, level: (Level.LOG|Level.WARN|Level.ERROR|Level.DEBUG) = Level.LOG){
-	if(typeof message !== "string"){
-		message = <Error><unknown>message.message;
+	if(message.constructor.name === 'Error' && typeof message !== 'string'){
+		message = <Error><unknown>(message).message;
 	}
 	process.stdout.write(`\x1b[${Level.DATE}m[${(new Date()).toLocaleString()}]\x1b[0m `);
 	process.stdout.write(`\x1b[${level}m`);

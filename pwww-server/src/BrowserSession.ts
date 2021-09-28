@@ -59,7 +59,15 @@ export default class BrowserSession {
     });
 
     this.rerep.addEventListener('misc', async (e) => {
-      this.tabManager?.sendCDP('Input.dispatchMouseEvent', (<any>e).payload);
+      switch((<any>e).payload.type){
+        case 'mouseWheel':
+          this.tabManager?.sendCDP('Input.dispatchMouseEvent', (<any>e).payload);
+          break;
+        case 'highlight':
+          this.enqueueTask({resolve: <any>(()=>{}), reject: <any>(()=>{}), task: {...(<any>e).payload, type: "read"}})
+          break;
+      }
+      
     });
   }
 
@@ -111,6 +119,24 @@ export default class BrowserSession {
   }
 
   /**
+   * Highlights all the elements matching the given selector. The returned promise is resolved after the function is successfully run in the browser's context (does not wait for the highlight to disappear).
+   * @param selector {string} Selector describing the elements to highlight.
+   */
+  private async highlightElements(selector: string) : Promise<void> {
+    await this.currentPage.$$eval(selector, (elements) => {
+      const highlightDelay = 2000;
+
+      elements.forEach(element => {
+        let bg = (<HTMLElement>element)?.style.backgroundColor;
+        (<HTMLElement>element).style.backgroundColor = "#008080";
+        setTimeout(() => {
+          (<HTMLElement>element).style.backgroundColor = bg;
+        }, highlightDelay);
+        });
+      });
+    };
+
+  /**
  * Main action-executing method.
  *
  * Takes the actions from the action queue and executes them according to the internal actionList - types.BrowserAction-keyed object with callback functions for values.
@@ -136,7 +162,9 @@ export default class BrowserSession {
     }
     logger(`Clicked on ${task.data.selector}`, Level.DEBUG);
   }
+
   if (task.data.selector) {
+    await this.highlightElements(task.data.selector);
     await this.currentPage.click(task.data.selector, { timeout: 5000 });
     return task;
   }
@@ -236,12 +264,14 @@ async (task) => {
           }, [task.data]);
 
           task.data.selector = nodeInfo.structuralSelector;
+          
 
           // We cannot 'read' images, just screenshot it.
           if (nodeInfo.tagName === 'IMG') {
             task.type = <types.BrowserAction><unknown>types.BrowserAction[types.BrowserAction.screenshot];
           }
         }
+        await this.highlightElements(task.data.selector);
         return task;
       },
       reset: async () => {

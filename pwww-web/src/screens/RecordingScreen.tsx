@@ -1,6 +1,6 @@
-/* eslint-disable max-len */
+/* eslint-disable */
 import {
-  Button, Container, Row, Col,
+  Button, Container, Row, Col, Spinner
 } from 'react-bootstrap';
 import React, { Component, createRef } from 'react';
 
@@ -177,7 +177,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
     this.Browser = new Proxy(new RemoteBrowser(), {
       get: (o, key) => {
         const { RecordingState } = this.state;
-        const recordables = ['click', 'goto', 'goBack', 'goForward', 'openTab', 'switchTab', 'closeTab', 'insertText'];
+        const recordables = ['click', 'goto', 'goBack', 'goForward', 'openTab', 'switchTab', 'closeTab', 'insertText', 'read'];
 
         if (RecordingState.isRecording && recordables.includes(key as string)) {
           return async (...args: any[]) => {
@@ -200,6 +200,8 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
         return o[key as any];
       },
     });
+
+    (window as any).Browser = this.Browser;
   }
 
   /**
@@ -239,7 +241,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
     switch (action) {
       case 'play':
         if (window.confirm('Starting the playback closes all open tabs. Do you want to proceed?')) {
-          this.playRecording().catch();
+          this.playRecording().catch(() => {});
         }
         break;
       case 'record':
@@ -285,7 +287,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
   private streamSetup = () => {
     if (this.canvas.current) {
       // const { RecordingState } = this.state;
-      this.Browser.connectToServer(window.location.hostname, parseInt(window.location.port, 10));
+      this.Browser.connectToServer(window.location.hostname, 8000);// parseInt(window.location.port, 10));
       this.Browser.screencastCallback = this.canvas.current.DrawImage;
       this.Browser.tabStateCallback = (tabs) => this.setState({ TabState: tabs });
     } else {
@@ -315,7 +317,7 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
 * @returns The promise gets normaly immediately resolved, when the class member stopSignal is set, the promise gets rejected (which then disables the playback).
 */
   private stop = () => new Promise<void>((res, rej) => {
-    if (this.stopSignal) rej(new Error('Execution stopped by user.')); else res();
+    if (this.stopSignal) rej({error: "Execution stopped by user."}); else res();
   });
 
   /**
@@ -404,14 +406,18 @@ export default class RecordingScreen extends Component<IRecScreenProps, IRecScre
     } = this.state;
 
     if (loading) {
-      return (<p>Loading...</p>);
+      return (
+      <div style={{width: "100vw", height: "100vh", textAlign:"center", paddingTop: "45vh", boxSizing: "border-box"}}>
+        <p><Spinner animation="border"/></p>
+        <p style={{fontWeight: 900}}>pwww 🚀</p>
+      </div>);
     }
     if (!ok) {
       return (
-        <p>
-          This recording is broken.
-          <a href="../">Go back...</a>
-        </p>
+          <div style={{width: "100vw", height: "100vh", textAlign:"center", paddingTop: "45vh", boxSizing: "border-box"}}>
+            <p>This recording is broken.</p>
+            <p><a href="../">Go back...</a></p>
+          </div>
       );
     }
 
